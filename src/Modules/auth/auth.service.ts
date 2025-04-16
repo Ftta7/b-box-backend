@@ -10,7 +10,7 @@ import { GlobalUser } from '../users/entities/global-user.entity';
 import { TenantUser } from '../users/entities/tenant-user.entity';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
-import { Tenant } from 'src/tenant/tenant.entity';
+import { Tenant } from 'src/Modules/tenant/tenant.entity';
 import { RegisterDto } from './DTO/register.dto';
 
 @Injectable()
