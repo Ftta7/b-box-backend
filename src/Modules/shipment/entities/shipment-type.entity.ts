@@ -1,19 +1,18 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+// src/Modules/shipment-types/entities/shipment-type.entity.ts
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Shipment } from './shipment.entity';
 
-@Entity('shipment_types')
+@Entity()
 export class ShipmentType {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column({ unique: true })
-  code: string; // مثال: 'standard', 'food', 'documents'
+  @Column()
+  code: string;
 
-  @Column({ type: 'jsonb', default: { en: '', ar: '' } })
-  name_translations: {
-    en: string;
-    ar: string;
-  };
+  @Column()
+  name: string;
 
-  @Column({ default: true })
-  is_active: boolean;
+  @OneToMany(() => Shipment, shipment => shipment.type)
+  shipments: Shipment[];
 }

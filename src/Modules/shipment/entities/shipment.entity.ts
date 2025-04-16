@@ -7,9 +7,9 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Tenant } from 'src/Modules/tenant/tenant.entity';
+import { Tenant } from 'src/Modules/tenants/entities/tenant.entity';
 import { ShipmentType } from './shipment-type.entity';
-import { Driver } from 'src/Modules/driver/entities/driver.entity';
+import { Driver } from 'src/Modules/drivers/entities/driver.entity';
 import { TenantSettlement } from 'src/Modules/settlements/entities/tenant-settlement.entity';
 
 @Entity('shipments')
@@ -51,10 +51,9 @@ export class Shipment {
   @Column()
   type_code: string;
 
-  @ManyToOne(() => ShipmentType)
-  @JoinColumn({ name: 'type_code', referencedColumnName: 'code' })
+  @ManyToOne(() => ShipmentType, type => type.shipments)
   type: ShipmentType;
-
+  
   @Column({ type: 'decimal', default: 0 })
   delivery_fee: number;
 
