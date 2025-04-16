@@ -1,3 +1,4 @@
+import { Shipment } from 'src/Modules/shipment/entities/shipment.entity';
 import {
     Entity,
     PrimaryGeneratedColumn,
@@ -6,7 +7,6 @@ import {
     UpdateDateColumn,
     OneToMany,
   } from 'typeorm';
-  import { Shipment } from '../../shipments/entities/shipment.entity';
   
   @Entity('tenant_settlements')
   export class TenantSettlement {
