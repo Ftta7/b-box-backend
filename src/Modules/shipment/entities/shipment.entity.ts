@@ -11,6 +11,7 @@ import { Tenant } from 'src/Modules/tenants/entities/tenant.entity';
 import { ShipmentType } from './shipment-type.entity';
 import { Driver } from 'src/Modules/drivers/entities/driver.entity';
 import { TenantSettlement } from 'src/Modules/settlements/entities/tenant-settlement.entity';
+import { TenantLocation } from 'src/Modules/tenants/entities/tenant-location.entity';
 
 @Entity('shipments')
 export class Shipment {
@@ -48,12 +49,7 @@ export class Shipment {
     notes?: string;
   };
 
-  @Column()
-  type_code: string;
 
-  @ManyToOne(() => ShipmentType, type => type.shipments)
-  type: ShipmentType;
-  
   @Column({ type: 'decimal', default: 0 })
   delivery_fee: number;
 
@@ -67,6 +63,20 @@ export class Shipment {
   @JoinColumn({ name: 'settlement_id' })
   settlement?: TenantSettlement;
 
+  @Column()
+  sender_location_id: string;
+  
+  @ManyToOne(() => TenantLocation)
+  @JoinColumn({ name: 'sender_location_id' })
+  sender_location: TenantLocation;
+
+  @Column({ type: 'jsonb', nullable: true })
+  items?: {
+    name: string;
+    quantity: number;
+    sku?: string;
+  }[];
+
   @CreateDateColumn()
   created_at: Date;
 
@@ -75,4 +85,16 @@ export class Shipment {
 
   @Column({ type: 'timestamp', nullable: true })
   delivered_at?: Date;
+
+  @Column({ unique: true })
+tracking_number: string;
+
+
+@Column()
+type_code: string;
+
+@ManyToOne(() => ShipmentType)
+@JoinColumn({ name: 'type_code', referencedColumnName: 'id' }) // أو 'code' حسب عمود الربط
+type: ShipmentType;
+
 }

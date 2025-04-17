@@ -12,6 +12,7 @@ import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { Tenant } from 'src/Modules/tenants/entities/tenant.entity';
 import { RegisterDto } from './DTO/register.dto';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -57,10 +58,10 @@ export class AuthService {
   async register(dto: RegisterDto) {
     const existing = await this.globalUsersRepo.findOne({ where: { email: dto.email } });
     if (existing) throw new ConflictException('Email already registered');
-
+  
     const userId = randomUUID();
     const passwordHash = await bcrypt.hash(dto.password, 10);
-
+  
     const user = this.globalUsersRepo.create({
       id: userId,
       email: dto.email,
@@ -68,10 +69,14 @@ export class AuthService {
       is_active: true,
     });
     await this.globalUsersRepo.save(user);
-
+  
+    let api_key: string | undefined;
+  
     if (dto.subdomain) {
       const tenantId = randomUUID();
-
+  
+      api_key = randomBytes(32).toString('hex'); // 🔐 توليد مفتاح عشوائي
+  
       const tenant = this.tenantsRepo.create({
         id: tenantId,
         subdomain: dto.subdomain,
@@ -79,10 +84,11 @@ export class AuthService {
           en: dto.subdomain,
           ar: dto.subdomain,
         },
+        api_key,
         created_at: new Date(),
       });
       await this.tenantsRepo.save(tenant);
-
+  
       const tenantUser = this.tenantUsersRepo.create({
         id: randomUUID(),
         tenant_id: tenantId,
@@ -92,8 +98,12 @@ export class AuthService {
       });
       await this.tenantUsersRepo.save(tenantUser);
     }
-
-    return { message: 'User registered successfully' };
+  
+    return {
+      message: 'User registered successfully',
+      ...(api_key ? { api_key } : {}),
+    };
   }
+  
 }
 

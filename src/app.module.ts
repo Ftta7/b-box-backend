@@ -1,20 +1,13 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
-// Modules
-import { AuthModule } from './Modules/auth/auth.module';
-import { DriversModule } from './Modules/drivers/drivers.module';
-import { SettlementsModule } from './Modules/settlements/settlements.module';
-import { ProofsModule } from './Modules/proofs/proofs.module';
-import { CancellationsModule } from './Modules/cancellations/cancellations.module';
-import { ZonesModule } from './Modules/zones/zones.module';
-import { HubsModule } from './Modules/hubs/hubs.module';
-import { DispatchModule } from './Modules/dispatch/dispatch.module';
-import { CollectionsModule } from './Modules/collections/collections.module';
-import { ShipmentsModule } from './Modules/shipment/shipments.module';
+import { TenantMiddleware } from './common/middleware/tenant.middleware';
+import { ApiKeyMiddleware } from './common/middleware/api-key.middleware';
+import { ModulesAggregator } from './app.modules';
 
 @Module({
   imports: [
@@ -25,21 +18,17 @@ import { ShipmentsModule } from './Modules/shipment/shipments.module';
     TypeOrmModule.forRoot({
       type: 'postgres',
       url: process.env.DATABASE_URL,
-      autoLoadEntities: true, // ✅ مهم جداً
+      autoLoadEntities: true,
       synchronize: true,
     }),
-    AuthModule,
-    DriversModule,
-    ShipmentsModule,
-    SettlementsModule,
-    ProofsModule,
-    CancellationsModule,
-    ZonesModule,
-    HubsModule,
-    DispatchModule,
-    CollectionsModule,
+    ModulesAggregator,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+   // consumer.apply(TenantMiddleware).forRoutes('*');
+    consumer.apply(ApiKeyMiddleware).forRoutes('/integration/*');
+  }
+}

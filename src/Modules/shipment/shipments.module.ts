@@ -4,11 +4,14 @@ import { ShipmentsService } from './shipments.service';
 import { ShipmentsController } from './shipments.controller';
 import { Shipment } from './entities/shipment.entity';
 import { ShipmentType } from './entities/shipment-type.entity';
+import { TenantLocation } from '../tenants/entities/tenant-location.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Shipment, ShipmentType])],
-  providers: [ShipmentsService],
+  imports: [
+    TypeOrmModule.forFeature([Shipment, ShipmentType, TenantLocation])
+  ],
   controllers: [ShipmentsController],
-  exports: [ShipmentsService],
+  providers: [ShipmentsService],
 })
 export class ShipmentsModule {}
+
