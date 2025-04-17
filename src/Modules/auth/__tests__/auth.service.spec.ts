@@ -4,9 +4,9 @@ import { JwtService } from '@nestjs/jwt';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { GlobalUser } from '../../users/entities/global-user.entity';
 import { TenantUser } from '../../users/entities/tenant-user.entity';
-import { Tenant } from '../../tenants/entities/tenant.entity';
 import { Repository } from 'typeorm';
 import { RegisterDto } from '../DTO/register.dto';
+import { Tenant } from 'src/Modules/tenants/entities/tenant.entity';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -62,6 +62,10 @@ describe('AuthService', () => {
     expect(globalUsersRepo.save).toHaveBeenCalled();
     expect(tenantsRepo.save).toHaveBeenCalled();
     expect(tenantUsersRepo.save).toHaveBeenCalled();
-    expect(result).toEqual({ message: 'User registered successfully' });
-  });
+    expect(result).toEqual(
+        expect.objectContaining({
+          message: 'User registered successfully',
+          api_key: expect.any(String), // أو تقدر تختبر القيمة الحقيقية لو معروفة
+        }),
+      );  });
 });
