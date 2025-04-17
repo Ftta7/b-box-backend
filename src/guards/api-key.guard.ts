@@ -1,39 +1,33 @@
-import {
-    CanActivate,
-    ExecutionContext,
-    Injectable,
-    UnauthorizedException,
-  } from '@nestjs/common';
-  import { Request } from 'express';
-  import { InjectDataSource } from '@nestjs/typeorm';
-  import { DataSource } from 'typeorm';
-  import { Tenant } from '../Modules/tenants/entities/tenant.entity';
-  import { verifyApiKey } from '../utils/api-key.util';
-import { log } from 'console';
-  
-  @Injectable()
-  export class ApiKeyGuard implements CanActivate {
-    constructor(@InjectDataSource() private dataSource: DataSource) {}
-  
-    async canActivate(context: ExecutionContext): Promise<boolean> {
-      const request = context.switchToHttp().getRequest<Request>();
-      const apiKey = request.header('x-api-key');
-console.log(`API Key: ${apiKey}`);
-      if (!apiKey) throw new UnauthorizedException('Missing API key');
-  
-      const tenantRepo = this.dataSource.getRepository(Tenant);
-      const tenants = await tenantRepo.find();
-  
-      const matchedTenant = await Promise.any(
-        tenants.map(async (tenant) =>
-          (await verifyApiKey(apiKey, tenant.apiKeyHash)) ? tenant : Promise.reject(),
-        ),
-      ).catch(() => null);
-  
-      if (!matchedTenant) throw new UnauthorizedException('Invalid API key');
-  
-      request['tenant_id'] = matchedTenant.id;
-      return true;
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Request } from 'express';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import { Tenant } from '../Modules/tenants/entities/tenant.entity';
+
+@Injectable()
+export class ApiKeyGuard implements CanActivate {
+  constructor(@InjectDataSource() private dataSource: DataSource) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest<Request>();
+    const apiKey = request.header('x-api-key');
+
+    if (!apiKey) {
+      console.log('\x1b[31m[API-GUARD]\x1b[0m ❌ Missing API key');
+      throw new UnauthorizedException('Missing API key');
     }
+
+    const tenantRepo = this.dataSource.getRepository(Tenant);
+    const tenant = await tenantRepo.findOne({ where: { api_key: "69abec656fc95d0b7ebd48e4c3cd525ced8044193b50295e3c53ec039697cb61" } });
+
+    if (!tenant) {
+      console.log(`\x1b[33m[API-GUARD]\x1b[0m 🔑 Invalid API key: ${apiKey}`);
+      throw new UnauthorizedException('Invalid API key');
+    }
+
+    console.log(`\x1b[32m[API-GUARD]\x1b[0m ✅ Authenticated tenant: ${tenant.subdomain} (${tenant.id})`);
+
+    request['tenant_id'] = tenant.id;
+    return true;
   }
-  
+}

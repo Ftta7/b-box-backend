@@ -20,6 +20,7 @@ import { ModulesAggregator } from './app.modules';
       url: process.env.DATABASE_URL,
       autoLoadEntities: true,
       synchronize: true,
+      logging: process.env.NODE_ENV !== 'production',
     }),
     ModulesAggregator,
   ],

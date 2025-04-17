@@ -21,7 +21,7 @@ export class TenantsService {
     const tenant = await this.repo.findOneByOrFail({ id: tenantId });
     const plainKey = generateApiKey();
     const hashedKey = await hashApiKey(plainKey);
-    tenant.apiKeyHash = hashedKey;
+    tenant.api_key = hashedKey;
     await this.repo.save(tenant);
     return { plainKey }; // أرسله لمرة واحدة فقط
   }

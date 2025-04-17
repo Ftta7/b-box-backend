@@ -20,12 +20,9 @@ export class Tenant {
   @Column({ type: 'timestamptz', nullable: true })
   updated_at?: Date;
 
-  @Column({ name: 'api_key_hash', nullable: true })
-  apiKeyHash: string;
-
   @Column({ default: true })
   is_active: boolean;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar', nullable: false })
 api_key?: string;
 }
