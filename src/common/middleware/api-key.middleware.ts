@@ -2,27 +2,25 @@ import { Injectable, NestMiddleware, UnauthorizedException } from '@nestjs/commo
 import { Request, Response, NextFunction } from 'express';
 import { DataSource } from 'typeorm';
 import { Tenant } from '../../Modules/tenants/entities/tenant.entity';
-import { verifyApiKey } from '../../utils/api-key.util'; // تأكد من وجود هذه الدالة في ملف utils/api-key.util.ts
+
 @Injectable()
 export class ApiKeyMiddleware implements NestMiddleware {
-  constructor(private dataSource: DataSource) {}
+  constructor(private readonly dataSource: DataSource) {}
 
-  async use(req: Request, res: Response, next: NextFunction) {
-    // const apiKey = req.header('x-api-key');
-    // if (!apiKey) throw new UnauthorizedException('Missing API key');
+  async use(req: Request & { tenant_id?: string }, res: Response, next: NextFunction) {
+    const apiKey = req.header('x-api-key');
 
-    // const tenantRepo = this.dataSource.getRepository(Tenant);
-    // const tenants = await tenantRepo.find(); // يمكن تحسينه لو عندك index
+    if (!apiKey) {
+      throw new UnauthorizedException('API key is required in the "x-api-key" header.');
+    }
 
-    // const matchedTenant = await Promise.any(
-    //   tenants.map(async (tenant) =>
-    //     (await verifyApiKey(apiKey, tenant.api_key)) ? tenant : Promise.reject(),
-    //   ),
-    // ).catch(() => null);
+    const tenant = await this.dataSource.getRepository(Tenant).findOneBy({ api_key: apiKey });
 
-    // if (!matchedTenant) throw new UnauthorizedException('Invalid API key');
+    if (!tenant) {
+      throw new UnauthorizedException('Invalid API key.');
+    }
 
-    // req['tenant_id'] = matchedTenant.id;
+    req.tenant_id = tenant.id;
     next();
   }
 }

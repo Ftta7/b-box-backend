@@ -1,5 +1,5 @@
-// src/modules/shipments/entities/shipment-status-history.entity.ts
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { ShipmentStatus } from './shipment-status.entity';
 
 @Entity()
 export class ShipmentStatusHistory {
@@ -10,7 +10,11 @@ export class ShipmentStatusHistory {
   shipment_id: string;
 
   @Column()
-  status: string;
+  status_code: string;
+
+  @ManyToOne(() => ShipmentStatus, { eager: true })
+  @JoinColumn({ name: 'status_code', referencedColumnName: 'code' })
+  status: ShipmentStatus;
 
   @Column({ nullable: true })
   note?: string;

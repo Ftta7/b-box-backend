@@ -6,6 +6,11 @@ import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { randomUUID } from 'crypto';
 import { TenantLocation } from '../tenants/entities/tenant-location.entity';
 import { ShipmentType } from './entities/shipment-type.entity';
+import { PaginatedResult } from 'src/common/interfaces/paginated-result.interface';
+import { ShipmentFilterDto } from './dto/shipment-filter.dto';
+import { ShipmentListItemDto } from './dto/shipment-list-item.dto';
+import { ShipmentDetailsDto } from './dto/shipment-details.dto';
+import { ShipmentStatusHistory } from './entities/shipment-status-history.entity';
 
 @Injectable()
 export class ShipmentsService {
@@ -18,6 +23,9 @@ export class ShipmentsService {
 
     @InjectRepository(ShipmentType)
     private typesRepo: Repository<ShipmentType>,
+
+    @InjectRepository(ShipmentStatusHistory)
+    private statusHistoryRepo: Repository<ShipmentStatusHistory>,
   ) {}
 
   async create(dto: CreateShipmentDto) {
@@ -62,4 +70,95 @@ export class ShipmentsService {
     const rand = Math.floor(100000 + Math.random() * 900000).toString();
     return `TRK-${rand}`;
   }
+
+  async listShipments(
+    filter: ShipmentFilterDto,
+  ): Promise<PaginatedResult<ShipmentListItemDto>> {
+    const query = this.shipmentsRepo.createQueryBuilder('s')
+      .leftJoinAndSelect('s.status', 'status')
+      .select([
+        's.id',
+        's.status_code',
+        's.recipient_info',
+        's.to_address',
+        's.created_at',
+        'status.name_translations',
+        'status.color',
+      ]);
+
+    if (filter.tenant_id) {
+      query.andWhere('s.tenant_id = :tenant_id', { tenant_id: filter.tenant_id });
+    }
+
+    if (filter.status_code) {
+      query.andWhere('s.status_code = :status_code', { status_code: filter.status_code });
+    }
+
+    if (filter.city) {
+      query.andWhere("s.to_address->>'city' = :city", { city: filter.city });
+    }
+
+    query.orderBy('s.created_at', 'DESC');
+
+    query.skip(filter.offset || 0);
+    query.take(filter.limit || 20);
+
+    const [results, total] = await query.getManyAndCount();
+
+    const data: ShipmentListItemDto[] = results.map((shipment) => ({
+      id: shipment.id,
+      status_name: shipment.status.name_translations['ar'],
+      color: shipment.status.color,
+      recipient_name: (shipment.recipient_info as any)?.name || '',
+      to_city: (shipment.to_address as any)?.city || '',
+      created_at: shipment.created_at,
+    }));
+
+    return { data, total };
+  }
+
+
+  async getShipmentDetails(id: string, lang: 'en' | 'ar' = 'ar'): Promise<ShipmentDetailsDto> {
+    const shipment = await this.shipmentsRepo.findOne({
+      where: { id },
+      relations: ['status'],
+    });
+  
+    if (!shipment) throw new NotFoundException('Shipment not found');
+  
+    const history = await this.statusHistoryRepo
+      .createQueryBuilder('h')
+      .leftJoinAndSelect('h.status', 'status')
+      .where('h.shipment_id = :id', { id })
+      .orderBy('h.created_at', 'ASC')
+      .getMany();
+  
+    return {
+      id: shipment.id,
+      status_code: shipment.status_code,
+      status_name: shipment.status.name_translations[lang],
+      color: shipment.status.color,
+      to_address: shipment.to_address,
+      recipient_info: shipment.recipient_info,
+      items: shipment.items,
+      // assigned_driver: shipment.assigned_driver
+      //   ? {
+      //       id: shipment.assigned_driver.id,
+      //       name: shipment.assigned_driver.name,
+      //     }
+      //   : undefined,
+      
+      status_history: history.map((h) => ({
+        status_code: h.status_code,
+        status_name: h.status.name_translations[lang],
+        color: h.status.color,
+        note: h.note,
+        created_at: h.created_at,
+      }))
+      
+      
+    };
+  }
+  
+  
 }
