@@ -29,7 +29,6 @@ import { ModulesAggregator } from './app.modules';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-   // consumer.apply(TenantMiddleware).forRoutes('*');
     consumer.apply(ApiKeyMiddleware).forRoutes('/integration/*');
   }
 }

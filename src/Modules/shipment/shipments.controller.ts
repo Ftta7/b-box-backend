@@ -21,8 +21,8 @@ export class ShipmentsController {
     @Body() dto: CreateShipmentDto,
     @Req() req: Request,
   ) {
-    const tenant_id = req['tenant_id'];
-    return this.shipmentsService.create(dto, tenant_id);
+    return this.shipmentsService.create({ ...dto, tenant_id: req['tenant_id'] });
+
   }
 
   @Get()

@@ -12,6 +12,7 @@ import { ShipmentType } from './shipment-type.entity';
 import { Driver } from 'src/Modules/drivers/entities/driver.entity';
 import { TenantSettlement } from 'src/Modules/settlements/entities/tenant-settlement.entity';
 import { TenantLocation } from 'src/Modules/tenants/entities/tenant-location.entity';
+import { ShipmentStatus } from './shipment-status.entity';
 
 @Entity('shipments')
 export class Shipment {
@@ -32,14 +33,13 @@ export class Shipment {
   @JoinColumn({ name: 'driver_id' })
   driver?: Driver;
 
-  @Column({ type: 'varchar', default: 'pending' })
-  status: 'pending' | 'assigned' | 'in_progress' | 'delivered' | 'cancelled';
-
   @Column({ type: 'jsonb', nullable: false, default: {} })
   to_address: {
     street: string;
     city: string;
     neighborhood?: string;
+    lat: number;
+    lng: number;
   };
 
   @Column({ type: 'jsonb', nullable: false, default: {} })
@@ -90,11 +90,15 @@ export class Shipment {
 tracking_number: string;
 
 
-@Column()
-type_code: string;
-
 @ManyToOne(() => ShipmentType)
 @JoinColumn({ name: 'type_code', referencedColumnName: 'id' }) // أو 'code' حسب عمود الربط
 type: ShipmentType;
+
+@Column()
+status_code: string;
+
+@ManyToOne(() => ShipmentStatus, { eager: true })
+@JoinColumn({ name: 'status_code', referencedColumnName: 'code' })
+status: ShipmentStatus;
 
 }

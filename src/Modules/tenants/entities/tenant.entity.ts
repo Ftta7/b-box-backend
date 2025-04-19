@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryColumn } from 'typeorm';
+import { ShipmentType } from 'src/Modules/shipment/entities/shipment-type.entity';
+import { Column, Entity, ManyToOne, PrimaryColumn } from 'typeorm';
 
 @Entity('tenants')
 export class Tenant {
@@ -24,5 +25,15 @@ export class Tenant {
   is_active: boolean;
 
   @Column({ type: 'varchar', nullable: false })
-api_key?: string;
+  api_key?: string;
+
+  @ManyToOne(() => ShipmentType, { nullable: true })
+  shipment_type: ShipmentType;
+
+  @Column({ nullable: true })
+  shipment_type_id: string;
+
+  @Column({ type: 'enum', enum: ['self', 'bbox', 'hybrid'], default: 'self' })
+  delivery_mode: 'self' | 'bbox' | 'hybrid';
+
 }

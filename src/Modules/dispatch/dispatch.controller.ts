@@ -5,8 +5,8 @@ import { DispatchService } from './dispatch.service';
 export class DispatchController {
   constructor(private readonly service: DispatchService) {}
 
-  @Get()
-  findAll() {
-    return this.service.findAll();
-  }
+  // @Get()
+  // findAll() {
+  //   return this.service.findAll();
+  // }
 }

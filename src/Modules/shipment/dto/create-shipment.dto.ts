@@ -31,6 +31,13 @@ class ToAddressDto {
   @IsOptional()
   @IsString()
   neighborhood?: string;
+
+
+  @IsNumber()
+  lat: number;  // Latitude of the address
+  
+  @IsNumber()
+  lng: number;  // Longitude of the address 
 }
 
 class ShipmentItemDto {
@@ -59,16 +66,18 @@ export class CreateShipmentDto {
   @IsObject()
   recipient_info: RecipientInfoDto;
 
-  @IsUUID()
-  shipment_type_id: string;
-
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+@IsUUID()
+tenant_id?: string;
 
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ShipmentItemDto)
   items?: ShipmentItemDto[];
+
 }
