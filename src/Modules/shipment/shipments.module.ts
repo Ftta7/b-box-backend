@@ -7,10 +7,12 @@ import { ShipmentType } from './entities/shipment-type.entity';
 import { TenantLocation } from '../tenants/entities/tenant-location.entity';
 import { ShipmentStatus } from './entities/shipment-status.entity';
 import { ShipmentStatusHistory } from './entities/shipment-status-history.entity';
+import { DispatchModule } from '../dispatch/dispatch.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Shipment, ShipmentType, TenantLocation,ShipmentStatus ,ShipmentStatusHistory   ])
+  ,DispatchModule
   ],
   controllers: [ShipmentsController],
   providers: [ShipmentsService],

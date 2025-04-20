@@ -34,6 +34,9 @@ export class ShipmentsController {
   @Get(':id')
   async getOne(@Param('id') id: string, @Req() req: Request) {
     const lang = (req as any).lang === 'en' ? 'en' : 'ar';
-    return this.shipmentsService.getShipmentDetails(id, lang);
+    const tenant_id = req['tenant_id'];
+    return this.shipmentsService.getShipmentDetails(id,tenant_id ,lang);
+
   }
+  
 }

@@ -11,6 +11,8 @@ import { ShipmentFilterDto } from './dto/shipment-filter.dto';
 import { ShipmentListItemDto } from './dto/shipment-list-item.dto';
 import { ShipmentDetailsDto } from './dto/shipment-details.dto';
 import { ShipmentStatusHistory } from './entities/shipment-status-history.entity';
+import { ShipmentStatus } from './entities/shipment-status.entity';
+import { DispatchService } from '../dispatch/dispatch.service';
 
 @Injectable()
 export class ShipmentsService {
@@ -26,37 +28,47 @@ export class ShipmentsService {
 
     @InjectRepository(ShipmentStatusHistory)
     private statusHistoryRepo: Repository<ShipmentStatusHistory>,
+
+    @InjectRepository(ShipmentStatus)
+    private statusRepo: Repository<ShipmentStatus>,
+
+    private readonly dispatchService: DispatchService,
   ) {}
 
   async create(dto: CreateShipmentDto) {
-    // تأكد من صلاحية موقع المرسل
     const location = await this.locationsRepo.findOne({
-      where: { id: dto.sender_location_id,tenant_id: dto.tenant_id },
+      where: { id: dto.sender_location_id, tenant_id: dto.tenant_id },
     });
     if (!location) throw new NotFoundException('Invalid sender location');
 
-    const shipmentId = randomUUID()
-    ;
+    const shipmentId = randomUUID();
 
     const shipment = this.shipmentsRepo.create({
       id: shipmentId,
       tenant_id: dto.tenant_id,
       sender_location_id: dto.sender_location_id,
-      to_address: dto.to_address, 
+      to_address: dto.to_address,
       recipient_info: dto.recipient_info,
       status_code: 'pending',
       tracking_number: this.generateTrackingNumber(),
+      items: dto.items || [],
     });
-    
+
     const saved = await this.shipmentsRepo.save(shipment);
-    
+
+    await this.statusHistoryRepo.save({
+      shipment_id: saved.id,
+      status_code: 'pending',
+      note: 'Shipment created',
+    });
+
+    await this.dispatchService.dispatchShipment(saved.id);
+
     return {
       message: 'Shipment created',
       tracking_number: saved.tracking_number,
       shipment_id: saved.id,
     };
-    
-
   }
 
   async findAll() {
@@ -117,22 +129,21 @@ export class ShipmentsService {
     return { data, total };
   }
 
-
-  async getShipmentDetails(id: string, lang: 'en' | 'ar' = 'ar'): Promise<ShipmentDetailsDto> {
+  async getShipmentDetails(id: string, tenant_id: string, lang: 'en' | 'ar' = 'ar'): Promise<ShipmentDetailsDto> {
     const shipment = await this.shipmentsRepo.findOne({
-      where: { id },
+      where: { id, tenant_id },
       relations: ['status'],
     });
-  
-    if (!shipment) throw new NotFoundException('Shipment not found');
-  
+
+    if (!shipment) throw new NotFoundException('Shipment not found or access denied');
+
     const history = await this.statusHistoryRepo
       .createQueryBuilder('h')
       .leftJoinAndSelect('h.status', 'status')
       .where('h.shipment_id = :id', { id })
       .orderBy('h.created_at', 'ASC')
       .getMany();
-  
+
     return {
       id: shipment.id,
       status_code: shipment.status_code,
@@ -141,13 +152,6 @@ export class ShipmentsService {
       to_address: shipment.to_address,
       recipient_info: shipment.recipient_info,
       items: shipment.items,
-      // assigned_driver: shipment.assigned_driver
-      //   ? {
-      //       id: shipment.assigned_driver.id,
-      //       name: shipment.assigned_driver.name,
-      //     }
-      //   : undefined,
-      
       status_history: history.map((h) => ({
         status_code: h.status_code,
         status_name: h.status.name_translations[lang],
@@ -155,10 +159,6 @@ export class ShipmentsService {
         note: h.note,
         created_at: h.created_at,
       }))
-      
-      
     };
   }
-  
-  
 }

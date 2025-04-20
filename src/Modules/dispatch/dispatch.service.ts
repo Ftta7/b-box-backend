@@ -35,6 +35,12 @@ export class DispatchService {
 
     // 🟡 التوصيل الذاتي
     if (tenant.delivery_mode === 'self') {
+      await this.statusHistoryRepo.save({
+        shipment_id: shipment.id,
+        status_code: 'pending',
+        note: `Self-delivery mode is enabled for tenant ${tenant.subdomain}`,
+      });
+
       return { status: 'waiting-for-merchant-assignment' };
     }
 
@@ -55,7 +61,6 @@ export class DispatchService {
         status_code: 'no_driver_available',
         note: `No BBox drivers available in ${toCity}`,
       });
-
       // الشحنة تظل في حالة pending
       return { status: 'pending' };
     }

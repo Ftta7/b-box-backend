@@ -18,7 +18,7 @@ export class ApiKeyGuard implements CanActivate {
     }
 
     const tenantRepo = this.dataSource.getRepository(Tenant);
-    const tenant = await tenantRepo.findOne({ where: { api_key: "69abec656fc95d0b7ebd48e4c3cd525ced8044193b50295e3c53ec039697cb61" } });
+    const tenant = await tenantRepo.findOne({ where: { api_key:apiKey } });
 
     if (!tenant) {
       console.log(`\x1b[33m[API-GUARD]\x1b[0m 🔑 Invalid API key: ${apiKey}`);
