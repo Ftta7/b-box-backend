@@ -13,6 +13,8 @@ import { ShipmentDetailsDto } from './dto/shipment-details.dto';
 import { ShipmentStatusHistory } from './entities/shipment-status-history.entity';
 import { ShipmentStatus } from './entities/shipment-status.entity';
 import { DispatchService } from '../dispatch/dispatch.service';
+import { UpdateShipmentStatusDto } from './dto/update-shipment-status.dto';
+import { DriverCollection } from '../drivers/entities/driver-collection.entity';
 
 @Injectable()
 export class ShipmentsService {
@@ -29,10 +31,8 @@ export class ShipmentsService {
     @InjectRepository(ShipmentStatusHistory)
     private statusHistoryRepo: Repository<ShipmentStatusHistory>,
 
-    @InjectRepository(ShipmentStatus)
-    private statusRepo: Repository<ShipmentStatus>,
 
-    private readonly dispatchService: DispatchService,
+    private dispatchService: DispatchService,
   ) {}
 
   async create(dto: CreateShipmentDto) {
@@ -49,9 +49,14 @@ export class ShipmentsService {
       sender_location_id: dto.sender_location_id,
       to_address: dto.to_address,
       recipient_info: dto.recipient_info,
+      items: dto.items || [],
+      shipment_value: dto.shipment_value,
+      delivery_fee: dto.delivery_fee,
+      total_amount: dto.total_amount,
+      actual_payment_type: dto.actual_payment_type,
+      payment_status: dto.payment_status,
       status_code: 'pending',
       tracking_number: this.generateTrackingNumber(),
-      items: dto.items || [],
     });
 
     const saved = await this.shipmentsRepo.save(shipment);
@@ -152,13 +157,54 @@ export class ShipmentsService {
       to_address: shipment.to_address,
       recipient_info: shipment.recipient_info,
       items: shipment.items,
+      shipment_value: shipment.shipment_value,
+      delivery_fee: shipment.delivery_fee,
+      total_amount: shipment.total_amount,
+      actual_payment_type: shipment.actual_payment_type,
+      payment_status: shipment.payment_status,
       status_history: history.map((h) => ({
         status_code: h.status_code,
         status_name: h.status.name_translations[lang],
         color: h.status.color,
         note: h.note,
         created_at: h.created_at,
-      }))
+      })),
     };
   }
+
+  async updateShipmentStatus(
+    dto: UpdateShipmentStatusDto,
+    tenant_id: string,
+  ): Promise<{ message: string }> {
+    const shipment = await this.shipmentsRepo.findOne({
+      where: { id: dto.shipment_id, tenant_id },
+    });
+  
+    if (!shipment) throw new NotFoundException('Shipment not found or access denied');
+  
+    // ✅ لو تم التوصيل والدفع عند التسليم
+    if (dto.new_status_code === 'delivered') {
+      if (
+        shipment.actual_payment_type &&
+        shipment.payment_status === 'pending' &&
+        ['cash', 'bank_transfer'].includes(shipment.actual_payment_type)
+      ) {
+        shipment.payment_status = 'paid';
+      }
+  
+      shipment.delivered_at = new Date();
+    }
+  
+    shipment.status_code = dto.new_status_code;
+    await this.shipmentsRepo.save(shipment);
+  
+    await this.statusHistoryRepo.save({
+      shipment_id: shipment.id,
+      status_code: dto.new_status_code,
+      note: dto.note,
+    });
+  
+    return { message: 'Shipment status updated' };
+  }
+  
 }

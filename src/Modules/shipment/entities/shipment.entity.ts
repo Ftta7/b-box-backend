@@ -49,12 +49,20 @@ export class Shipment {
     notes?: string;
   };
 
-
   @Column({ type: 'decimal', default: 0 })
   delivery_fee: number;
 
-  @Column({ type: 'varchar', default: 'cod' })
-  payment_method: 'cod' | 'prepaid';
+  @Column({ type: 'decimal', nullable: true })
+  shipment_value: number;
+
+  @Column({ type: 'decimal', nullable: true })
+  total_amount: number;
+
+  @Column({ type: 'varchar', nullable: true })
+  actual_payment_type: 'cash' | 'bank_transfer' | 'online' | 'not_paid';
+
+  @Column({ type: 'varchar', default: 'pending' })
+  payment_status: 'pending' | 'paid' | 'partial' | 'failed' | 'refunded';
 
   @Column({ nullable: true })
   settlement_id?: string;
@@ -65,7 +73,7 @@ export class Shipment {
 
   @Column()
   sender_location_id: string;
-  
+
   @ManyToOne(() => TenantLocation)
   @JoinColumn({ name: 'sender_location_id' })
   sender_location: TenantLocation;
@@ -87,18 +95,16 @@ export class Shipment {
   delivered_at?: Date;
 
   @Column({ unique: true })
-tracking_number: string;
+  tracking_number: string;
 
+  @ManyToOne(() => ShipmentType)
+  @JoinColumn({ name: 'type_code', referencedColumnName: 'id' })
+  type: ShipmentType;
 
-@ManyToOne(() => ShipmentType)
-@JoinColumn({ name: 'type_code', referencedColumnName: 'id' }) // أو 'code' حسب عمود الربط
-type: ShipmentType;
+  @Column()
+  status_code: string;
 
-@Column()
-status_code: string;
-
-@ManyToOne(() => ShipmentStatus, { eager: true })
-@JoinColumn({ name: 'status_code', referencedColumnName: 'code' })
-status: ShipmentStatus;
-
+  @ManyToOne(() => ShipmentStatus, { eager: true })
+  @JoinColumn({ name: 'status_code', referencedColumnName: 'code' })
+  status: ShipmentStatus;
 }

@@ -8,6 +8,7 @@ import { Tenant } from '../tenants/entities/tenant.entity';
 import { Driver } from '../drivers/entities/driver.entity';
 import { Shipment } from '../shipment/entities/shipment.entity';
 import { ShipmentStatusHistory } from '../shipment/entities/shipment-status-history.entity';
+import { DriverCollection } from '../drivers/entities/driver-collection.entity';
 @Injectable()
 export class DispatchService {
   constructor(
@@ -22,6 +23,10 @@ export class DispatchService {
 
     @InjectRepository(ShipmentStatusHistory)
     private readonly statusHistoryRepo: Repository<ShipmentStatusHistory>,
+  
+    @InjectRepository(DriverCollection)
+      private driverCollectionRepo: Repository<DriverCollection>,
+  
   ) {}
 
   async dispatchShipment(shipmentId: string): Promise<{ status: string; driver_id?: string }> {
@@ -77,6 +82,19 @@ export class DispatchService {
       status_code: 'assigned',
       note: `Assigned to driver ID: ${selectedDriver.id}`,
     });
+
+    if (
+      shipment.actual_payment_type === 'cash' ||
+      shipment.actual_payment_type === 'bank_transfer'
+    ) {
+      await this.driverCollectionRepo.save({
+        driver_id: selectedDriver.id,
+        shipment_id: shipment.id,
+        amount: shipment.total_amount || 0,
+        payment_type: shipment.actual_payment_type,
+      });
+    }
+    
 
     return {
       status: 'assigned',

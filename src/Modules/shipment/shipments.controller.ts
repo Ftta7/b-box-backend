@@ -6,11 +6,13 @@ import {
   Req,
   UseGuards,
   Param,
+  Patch,
 } from '@nestjs/common';
 import { ShipmentsService } from './shipments.service';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { Request } from 'express';
 import { ApiKeyGuard } from 'src/guards/api-key.guard';
+import { UpdateShipmentStatusDto } from './dto/update-shipment-status.dto';
 
 @Controller('integration/shipments') // ← المسار تحت تكامل
 @UseGuards(ApiKeyGuard)
@@ -38,5 +40,14 @@ export class ShipmentsController {
     return this.shipmentsService.getShipmentDetails(id,tenant_id ,lang);
 
   }
+
+  @Patch('status')
+async updateStatus(
+  @Body() dto: UpdateShipmentStatusDto,
+  @Req() req: Request,
+) {
+  return this.shipmentsService.updateShipmentStatus(dto, req['tenant_id']);
+}
+
   
 }

@@ -80,4 +80,25 @@ tenant_id?: string;
   @Type(() => ShipmentItemDto)
   items?: ShipmentItemDto[];
 
+  @IsOptional()
+@IsNumber()
+shipment_value?: number;
+
+@IsOptional()
+@IsNumber()
+delivery_fee?: number;
+
+@IsOptional()
+@IsNumber()
+total_amount?: number;
+
+@IsOptional()
+@IsString()
+actual_payment_type?: 'cash' | 'bank_transfer' | 'online' | 'not_paid';
+
+@IsOptional()
+@IsString()
+payment_status?: 'pending' | 'paid' | 'partial' | 'failed' | 'refunded';
+
+
 }

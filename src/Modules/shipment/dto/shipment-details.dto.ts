@@ -7,7 +7,6 @@ export class ShipmentStatusHistoryItemDto {
   status_name: string;
 
   color: string;
-
   note?: string;
   created_at: Date;
 }
@@ -25,10 +24,12 @@ export class ShipmentDetailsDto {
   recipient_info: any;
   items?: any[];
 
-  assigned_driver?: {
-    id: string;
-    name: string;
-  };
+  shipment_value?: number;
+  delivery_fee?: number;
+  total_amount?: number;
+
+  actual_payment_type?: 'cash' | 'bank_transfer' | 'online' | 'not_paid';
+  payment_status: 'pending' | 'paid' | 'partial' | 'failed' | 'refunded';
 
   status_history: ShipmentStatusHistoryItemDto[];
 }
