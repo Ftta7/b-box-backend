@@ -36,69 +36,61 @@ export class DispatchService {
     });
 
     if (!shipment) throw new NotFoundException('Shipment not found');
+
     const tenant = shipment.tenant;
 
-    // 🟡 التوصيل الذاتي
+    // 🚫 إذا التاجر يعتمد على نفسه بالتوصيل
     if (tenant.delivery_mode === 'self') {
-      await this.statusHistoryRepo.save({
-        shipment_id: shipment.id,
-        status_code: 'pending',
-        note: `Self-delivery mode is enabled for tenant ${tenant.subdomain}`,
-      });
-
+      await this.updateShipmentStatus(shipment, 'waiting-for-merchant-assignment', 'التوصيل ذاتي بانتظار التاجر');
       return { status: 'waiting-for-merchant-assignment' };
     }
 
-    // 🔍 البحث عن سائق متاح في نفس المدينة
-    const toCity = (shipment.to_address as any)?.city;
+    // 🧠 حاول تعيين سائق من BBox
+    const assigned = await this.assignAvailableDriver(shipment);
+
+    if (!assigned) {
+      await this.updateShipmentStatus(shipment, 'no_driver_available', 'لا يوجد سائق متاح حاليًا');
+      return { status: 'no_driver_available' };
+    }
+
+    // ✅ نجاح التعيين
+    shipment.driver_id = assigned.id;
+    shipment.status_code = 'assigned';
+    await this.shipmentsRepo.save(shipment);
+    await this.updateShipmentStatus(shipment, 'assigned', `تم تعيين السائق ${assigned.full_name}`);
+
+    return {
+      status: 'assigned',
+      driver_id: assigned.id,
+    };
+  }
+
+  private async assignAvailableDriver(shipment: Shipment): Promise<Driver | null> {
+    const city = (shipment.to_address as any)?.city;
+
     const availableDrivers = await this.driversRepo.find({
       where: {
         is_active: true,
         is_bbox_driver: true,
-     //   current_city: toCity,
+       // current_city: city,
       },
     });
 
-    // ❌ لا يوجد سائق
-    if (availableDrivers.length === 0) {
-      await this.statusHistoryRepo.save({
-        shipment_id: shipment.id,
-        status_code: 'no_driver_available',
-        note: `No BBox drivers available in ${toCity}`,
-      });
-      // الشحنة تظل في حالة pending
-      return { status: 'pending' };
-    }
+    return availableDrivers.length > 0 ? availableDrivers[0] : null;
+  }
 
-    // ✅ سائق متاح - التعيين
-    const selectedDriver = availableDrivers[0];
-
-    shipment.driver_id = selectedDriver.id;
-    shipment.status_code = 'assigned';
+  private async updateShipmentStatus(
+    shipment: Shipment,
+    newStatus: string,
+    note?: string,
+  ): Promise<void> {
+    shipment.status_code = newStatus;
     await this.shipmentsRepo.save(shipment);
 
     await this.statusHistoryRepo.save({
       shipment_id: shipment.id,
-      status_code: 'assigned',
-      note: `Assigned to driver ID: ${selectedDriver.id}`,
+      status_code: newStatus,
+      note,
     });
-
-    if (
-      shipment.actual_payment_type === 'cash' ||
-      shipment.actual_payment_type === 'bank_transfer'
-    ) {
-      await this.driverCollectionRepo.save({
-        driver_id: selectedDriver.id,
-        shipment_id: shipment.id,
-        amount: shipment.total_amount || 0,
-        payment_type: shipment.actual_payment_type,
-      });
-    }
-    
-
-    return {
-      status: 'assigned',
-      driver_id: selectedDriver.id,
-    };
   }
 }
