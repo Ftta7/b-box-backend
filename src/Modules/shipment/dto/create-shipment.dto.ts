@@ -6,6 +6,7 @@ import {
   ValidateNested,
   IsArray,
   IsNumber,
+  IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -32,12 +33,11 @@ class ToAddressDto {
   @IsString()
   neighborhood?: string;
 
+  @IsNumber()
+  lat: number;
 
   @IsNumber()
-  lat: number;  // Latitude of the address
-  
-  @IsNumber()
-  lng: number;  // Longitude of the address 
+  lng: number;
 }
 
 class ShipmentItemDto {
@@ -67,38 +67,35 @@ export class CreateShipmentDto {
   recipient_info: RecipientInfoDto;
 
   @IsOptional()
-  @IsString()
-  notes?: string;
-
-  @IsOptional()
-@IsUUID()
-tenant_id?: string;
-
-  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ShipmentItemDto)
   items?: ShipmentItemDto[];
 
+  @IsNumber()
+  shipment_value: number;
+
   @IsOptional()
-@IsNumber()
-shipment_value?: number;
+  @IsNumber()
+  delivery_fee?: number;
 
-@IsOptional()
-@IsNumber()
-delivery_fee?: number;
+  @IsOptional()
+  @IsNumber()
+  total_amount?: number;
 
-@IsOptional()
-@IsNumber()
-total_amount?: number;
+  @IsString()
+  @IsIn(['cash', 'bank_transfer', 'online', 'not_paid'])
+  payment_type: 'cash' | 'bank_transfer' | 'online' | 'not_paid';
 
-@IsOptional()
-@IsString()
-actual_payment_type?: 'cash' | 'bank_transfer' | 'online' | 'not_paid';
+  @IsString()
+  @IsIn(['pending', 'paid', 'partial', 'failed', 'refunded'])
+  payment_status: 'pending' | 'paid' | 'partial' | 'failed' | 'refunded';
 
-@IsOptional()
-@IsString()
-payment_status?: 'pending' | 'paid' | 'partial' | 'failed' | 'refunded';
+  @IsOptional()
+  @IsUUID()
+  tenant_id: string;
 
-
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }

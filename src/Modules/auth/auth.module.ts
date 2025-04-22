@@ -8,11 +8,12 @@ import { GlobalUser } from '../users/entities/global-user.entity';
 import { TenantUser } from '../users/entities/tenant-user.entity';
 import { Tenant } from 'src/Modules/tenants/entities/tenant.entity';
 import { JwtStrategy } from 'src/authintication/jwt.strategy';
+import { Driver } from '../drivers/entities/driver.entity';
 
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([GlobalUser, TenantUser, Tenant]),
+    TypeOrmModule.forFeature([GlobalUser, TenantUser, Tenant,Driver]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

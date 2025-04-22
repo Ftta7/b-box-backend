@@ -1,4 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { GlobalUser } from 'src/Modules/users/entities/global-user.entity';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToOne,
+  JoinColumn,
+} from 'typeorm';
 
 @Entity('drivers')
 export class Driver {
@@ -8,20 +17,21 @@ export class Driver {
   @Column()
   tenant_id: string; // التيننت الذي ينتمي له السائق
 
-  @Column()
-  full_name: string;
+  @OneToOne(() => GlobalUser, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
+  user: GlobalUser;
 
-  @Column({ unique: true })
-  phone: string;
+  @Column({ type: 'uuid', unique: true })
+  user_id: string;
 
   @Column({ type: 'boolean', default: false })
-  is_bbox_driver: boolean; // true = سائق من فريق BBox
+  is_bbox_driver: boolean;
 
   @Column({ type: 'varchar', default: 'salary' })
-  payment_type: 'salary' | 'commission'; // نوع الدفع
+  payment_type: 'salary' | 'commission';
 
-  @Column({ type: 'decimal', nullable: true })
-  commission_rate?: number; // فقط إذا كان payment_type = 'commission'
+  @Column({ type: 'decimal', default: 0 })
+  commission_rate: number;
 
   @Column({ default: true })
   is_active: boolean;

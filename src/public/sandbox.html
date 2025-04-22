@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>BBox Sandbox</title>
+  <style>
+    body { font-family: Arial, sans-serif; direction: rtl; padding: 20px; background: #f9f9f9; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: right; }
+    th { background-color: #f0f0f0; }
+    h2, h3, h4 { color: #2c3e50; }
+    button { padding: 10px 20px; background: #2d89ef; color: white; border: none; cursor: pointer; margin-bottom: 20px; }
+    button:hover { background: #1b5dbf; }
+    form input { width: 300px; margin: 4px 0; padding: 5px; }
+    .clickable-row { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>📦 BBox تجربة التاجر</h1>
+
+  <h2>📮 الشحنات</h2>
+  <div id="shipmentsTable">جاري التحميل...</div>
+
+  <!-- ✅ فورم تفاصيل الشحنة -->
+  <div id="shipmentDetails" style="display: none; margin-top: 40px;">
+    <h3>🧾 تفاصيل الشحنة</h3>
+    <form>
+      <label>رقم التتبع: <input id="detail_tracking" readonly /></label><br />
+      <label>العميل: <input id="detail_recipient" readonly /></label><br />
+      <label>العنوان: <input id="detail_address" readonly /></label><br />
+      <label>الحالة الحالية: <input id="detail_status" readonly /></label><br />
+      <label>القيمة الكلية: <input id="detail_total" readonly /></label>
+    </form>
+
+    <h4>📜 سجل الحالات</h4>
+    <ul id="statusHistory"></ul>
+  </div>
+
+  <h2>🚚 السائقون</h2>
+  <div id="driversTable">جاري التحميل...</div>
+
+  <h2>💰 التسويات</h2>
+  <button id="generateBtn">🔁 توليد تسوية جديدة</button>
+  <div id="settlementsTable">جاري التحميل...</div>
+
+  <script src="sandbox.js"></script>
+</body>
+</html>

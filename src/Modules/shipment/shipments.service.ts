@@ -53,7 +53,7 @@ export class ShipmentsService {
       shipment_value: dto.shipment_value,
       delivery_fee: dto.delivery_fee,
       total_amount: dto.total_amount,
-      actual_payment_type: dto.actual_payment_type,
+      actual_payment_type: dto.payment_type,
       payment_status: dto.payment_status,
       status_code: 'pending',
       tracking_number: this.generateTrackingNumber(),

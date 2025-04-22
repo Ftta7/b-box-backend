@@ -41,23 +41,23 @@ export class DispatchService {
 
     // 🚫 إذا التاجر يعتمد على نفسه بالتوصيل
     if (tenant.delivery_mode === 'self') {
-      await this.updateShipmentStatus(shipment, 'waiting-for-merchant-assignment', 'التوصيل ذاتي بانتظار التاجر');
-      return { status: 'waiting-for-merchant-assignment' };
+      await this.updateShipmentStatus(shipment, 'pending', 'التوصيل ذاتي بانتظار التاجر');
+      return { status: 'pending'};
     }
 
     // 🧠 حاول تعيين سائق من BBox
     const assigned = await this.assignAvailableDriver(shipment);
 
     if (!assigned) {
-      await this.updateShipmentStatus(shipment, 'no_driver_available', 'لا يوجد سائق متاح حاليًا');
-      return { status: 'no_driver_available' };
+      await this.updateShipmentStatus(shipment, 'pending', 'لا يوجد سائق متاح حاليًا');
+      return { status: 'pending' };
     }
 
     // ✅ نجاح التعيين
     shipment.driver_id = assigned.id;
     shipment.status_code = 'assigned';
     await this.shipmentsRepo.save(shipment);
-    await this.updateShipmentStatus(shipment, 'assigned', `تم تعيين السائق ${assigned.full_name}`);
+    await this.updateShipmentStatus(shipment, 'assigned', `تم تعيين السائق ${assigned?.user?.name}`);
 
     return {
       status: 'assigned',
@@ -78,6 +78,7 @@ export class DispatchService {
 
     return availableDrivers.length > 0 ? availableDrivers[0] : null;
   }
+
 
   private async updateShipmentStatus(
     shipment: Shipment,
