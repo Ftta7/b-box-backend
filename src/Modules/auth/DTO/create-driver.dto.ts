@@ -1,6 +1,7 @@
 // src/modules/users/dto/create-driver.dto.ts
 import { IsString, IsPhoneNumber, MinLength, IsOptional, IsUUID, IsEnum } from 'class-validator';
 
+
 export class CreateDriverDto {
   @IsString()
   full_name: string;
