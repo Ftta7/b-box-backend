@@ -5,7 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { GlobalUser } from '../../users/entities/global-user.entity';
 import { TenantUser } from '../../users/entities/tenant-user.entity';
 import { Repository } from 'typeorm';
-import { RegisterDto } from '../dto/register.dto';
+import { RegisterDto } from '../DTO/register.dto';
 import { Tenant } from 'src/Modules/tenants/entities/tenant.entity';
 
 describe('AuthService', () => {

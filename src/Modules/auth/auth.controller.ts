@@ -1,11 +1,11 @@
 ﻿import { Controller, Post, Body, HttpCode, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
-import { DriverLoginDto } from './dto/driver-login.dto';
-import { CreateDriverDto } from './dto/create-driver.dto';
+import { RegisterDto } from './DTO/register.dto';
+import { DriverLoginDto } from './DTO/driver-login.dto';
+import { CreateDriverDto } from './DTO/create-driver.dto';
 import { SuccessResponse, ErrorsResponse } from 'src/common/helpers/wrap-response.helper';
-import { CreateDashboardUserDto } from './dto/create-dashboard-user.dto';
-import { LoginDashboardUserDto } from './dto/login-dashboard-user.dto';
+import { CreateDashboardUserDto } from './DTO/create-dashboard-user.dto';
+import { LoginDashboardUserDto } from './DTO/login-dashboard-user.dto';
 
 @Controller('auth')
 export class AuthController {
