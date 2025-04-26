@@ -15,6 +15,10 @@ import { ShipmentStatus } from './entities/shipment-status.entity';
 import { DispatchService } from '../dispatch/dispatch.service';
 import { UpdateShipmentStatusDto } from './dto/update-shipment-status.dto';
 import { DriverCollection } from '../drivers/entities/driver-collection.entity';
+import { ShipmentStatusFlow } from 'src/common/constants/shipment-status-flow';
+import { UpdateShipmentStatusByDriverDto } from './dto/update-shipment-status-by-driver.dto';
+import { ErrorsResponse } from 'src/common/helpers/wrap-response.helper';
+import { log } from 'console';
 
 @Injectable()
 export class ShipmentsService {
@@ -33,7 +37,7 @@ export class ShipmentsService {
 
 
     private dispatchService: DispatchService,
-  ) {}
+  ) { }
 
   async create(dto: CreateShipmentDto) {
     const location = await this.locationsRepo.findOne({
@@ -179,9 +183,9 @@ export class ShipmentsService {
     const shipment = await this.shipmentsRepo.findOne({
       where: { id: dto.shipment_id, tenant_id },
     });
-  
+
     if (!shipment) throw new NotFoundException('Shipment not found or access denied');
-  
+
     // ✅ لو تم التوصيل والدفع عند التسليم
     if (dto.new_status_code === 'delivered') {
       if (
@@ -191,20 +195,122 @@ export class ShipmentsService {
       ) {
         shipment.payment_status = 'paid';
       }
-  
+
       shipment.delivered_at = new Date();
     }
-  
+
     shipment.status_code = dto.new_status_code;
     await this.shipmentsRepo.save(shipment);
+
+    await this.statusHistoryRepo.save({
+      shipment_id: shipment.id,
+      status_code: dto.new_status_code,
+      note: dto.note,
+    });
+
+    return { message: 'Shipment status updated' };
+  }
+
+
+  async getForDriver(driverId: string) {
+    const shipments = await this.shipmentsRepo.find({
+      where: { driver_id: driverId },
+      relations: ['status'],
+      order: { created_at: 'DESC' },
+    });
+
+    return shipments.map((shipment) => {
+      const status = shipment.status;
+      const available_actions = ShipmentStatusFlow[shipment.status_code] || [];
+
+      return {
+        ...shipment,
+        status_info: {
+          code: status.code,
+          name: status.name_translations,
+          color: status.color,
+          available_actions,
+        },
+      };
+    });
+  }
+
+
+  async getOneForDriver(driverId: string, shipmentId: string) {
+    const shipment = await this.shipmentsRepo.findOne({
+      where: { id: shipmentId, driver_id: driverId },
+      relations: ['status'],
+    });
+
+    if (!shipment) {
+      throw new NotFoundException('Shipment not found for this driver');
+    }
+
+    const status = shipment.status;
+    const available_actions = ShipmentStatusFlow[shipment.status_code] || [];
+
+    return {
+      ...shipment,
+      available_actions,
+    };
+  }
+
+  async driverUpdateShipmentStatus(
+    driverId: string,
+    dto: UpdateShipmentStatusByDriverDto,
+  ): Promise<{ message: string }> {
+    const shipment = await this.shipmentsRepo.findOne({
+      where: { id: dto.shipment_id, driver_id: driverId },
+    });
   
+    if (!shipment) {
+      return ErrorsResponse(null, 'Shipment not found or not assigned to this driver');
+    }
+  
+    const currentStatus = shipment.status_code;
+  
+    // 🚫 لا يسمح بتحديث الشحنة من الحالات النهائية
+    const finalStatuses = ['delivered', 'failed', 'cancelled'];
+    if (finalStatuses.includes(currentStatus)) {
+      return ErrorsResponse(null, `Cannot update shipment with final status: ${currentStatus}`);
+    }
+  
+    const availableActions = ShipmentStatusFlow[currentStatus] || [];
+  
+    if (!availableActions.includes(dto.new_status_code)) {
+      return ErrorsResponse(null, `Invalid status transition from ${currentStatus} to ${dto.new_status_code}`);
+    }
+  
+    // ⏱️ إعداد القيم للتحديث
+    const updates: Partial<Shipment> = {
+      status_code: dto.new_status_code,
+    };
+  
+    if (dto.new_status_code === 'delivered') {
+      updates.delivered_at = new Date();
+  
+      if (
+        shipment.actual_payment_type &&
+        shipment.payment_status === 'pending' &&
+        ['cash', 'bank_transfer'].includes(shipment.actual_payment_type)
+      ) {
+        updates.payment_status = 'paid';
+      }
+    }
+  
+    // ✅ تحديث مباشر في قاعدة البيانات
+    await this.shipmentsRepo.update(shipment.id, updates);
+  
+    // 📝 حفظ السجل في التاريخ
     await this.statusHistoryRepo.save({
       shipment_id: shipment.id,
       status_code: dto.new_status_code,
       note: dto.note,
     });
   
-    return { message: 'Shipment status updated' };
+    return { message: 'Shipment status updated successfully' };
   }
   
+
+
 }

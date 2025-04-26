@@ -13,18 +13,18 @@ import { Driver } from 'src/Modules/drivers/entities/driver.entity';
 import { TenantSettlement } from 'src/Modules/settlements/entities/tenant-settlement.entity';
 import { TenantLocation } from 'src/Modules/tenants/entities/tenant-location.entity';
 import { ShipmentStatus } from './shipment-status.entity';
-
+import { Carrier } from 'src/Modules/carriers/entities/carrier.entity';
 @Entity('shipments')
 export class Shipment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
-  tenant_id: string;
+  tenant_id?: string;
 
   @ManyToOne(() => Tenant)
   @JoinColumn({ name: 'tenant_id' })
-  tenant: Tenant;
+  tenant?: Tenant;
 
   @Column({ nullable: true })
   driver_id?: string;
@@ -32,6 +32,44 @@ export class Shipment {
   @ManyToOne(() => Driver, { nullable: true })
   @JoinColumn({ name: 'driver_id' })
   driver?: Driver;
+
+  @Column({ type: 'uuid', nullable: true })
+  carrier_id?: string;
+
+  @ManyToOne(() => Carrier, { nullable: true })
+  @JoinColumn({ name: 'carrier_id' })
+  carrier?: Carrier;
+
+  @Column({ type: 'decimal', default: 0 })
+  delivery_fee: number;
+
+  @Column({ type: 'decimal', default: 0 })
+  platform_fee: number;
+
+  @Column({ type: 'decimal', default: 0 })
+  tenant_payout: number;
+
+  @Column({ type: 'decimal', nullable: true })
+  cod_amount?: number;
+
+  @Column({ type: 'decimal', nullable: true })
+  amount_received_from_carrier?: number;
+
+  @Column({ default: false })
+  is_received_from_carrier: boolean;
+
+  @Column({ default: false })
+  is_settled_with_tenant: boolean;
+
+
+  @Column({ type: 'jsonb', nullable: false, default: {} })
+  from_address: {
+    street: string;
+    city: string;
+    neighborhood?: string;
+    lat: number;
+    lng: number;
+  };
 
   @Column({ type: 'jsonb', nullable: false, default: {} })
   to_address: {
@@ -49,13 +87,10 @@ export class Shipment {
     notes?: string;
   };
 
-  @Column({ type: 'decimal', default: 0 })
-  delivery_fee: number;
-
   @Column({ type: 'decimal', nullable: true })
   shipment_value: number;
 
-  @Column({ type: 'decimal', nullable: true })
+  @Column({ type: 'decimal', default: 0 })
   total_amount: number;
 
   @Column({ type: 'varchar', nullable: true })
@@ -72,7 +107,7 @@ export class Shipment {
   settlement?: TenantSettlement;
 
   @Column()
-  sender_location_id: string;
+  sender_location_id?: string;
 
   @ManyToOne(() => TenantLocation)
   @JoinColumn({ name: 'sender_location_id' })
@@ -97,11 +132,14 @@ export class Shipment {
   @Column({ unique: true })
   tracking_number: string;
 
+  @Column({ default: false })
+  is_wallet_deducted: boolean;
+
   @ManyToOne(() => ShipmentType)
   @JoinColumn({ name: 'type_code', referencedColumnName: 'id' })
   type: ShipmentType;
 
-  @Column()
+  @Column({ name: 'status_code' })
   status_code: string;
 
   @ManyToOne(() => ShipmentStatus, { eager: true })

@@ -6,7 +6,6 @@ import * as compression from 'compression';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as express from 'express';
 import { join } from 'path';
-import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -35,7 +34,6 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
   // serve static HTML files
   app.use('/sandbox', express.static(join(__dirname, '..', 'src/public')));
-  app.useGlobalInterceptors(new ResponseInterceptor());
 
   await app.listen(process.env.PORT || 3000);
 }

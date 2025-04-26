@@ -17,6 +17,7 @@ import { DriverCollection } from '../drivers/entities/driver-collection.entity';
   ],
   controllers: [ShipmentsController],
   providers: [ShipmentsService],
+  exports: [ShipmentsService], 
 })
 export class ShipmentsModule {}
 

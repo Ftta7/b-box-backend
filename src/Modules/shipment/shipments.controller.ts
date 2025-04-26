@@ -37,17 +37,17 @@ export class ShipmentsController {
   async getOne(@Param('id') id: string, @Req() req: Request) {
     const lang = (req as any).lang === 'en' ? 'en' : 'ar';
     const tenant_id = req['tenant_id'];
-    return this.shipmentsService.getShipmentDetails(id,tenant_id ,lang);
+    return this.shipmentsService.getShipmentDetails(id, tenant_id, lang);
 
   }
 
   @Patch('status')
-async updateStatus(
-  @Body() dto: UpdateShipmentStatusDto,
-  @Req() req: Request,
-) {
-  return this.shipmentsService.updateShipmentStatus(dto, req['tenant_id']);
-}
+  async updateStatus(
+    @Body() dto: UpdateShipmentStatusDto,
+    @Req() req: Request,
+  ) {
+    return this.shipmentsService.updateShipmentStatus(dto, req['tenant_id']);
+  }
 
-  
+
 }

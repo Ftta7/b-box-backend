@@ -9,6 +9,7 @@ import { Driver } from '../drivers/entities/driver.entity';
 import { Shipment } from '../shipment/entities/shipment.entity';
 import { ShipmentStatusHistory } from '../shipment/entities/shipment-status-history.entity';
 import { DriverCollection } from '../drivers/entities/driver-collection.entity';
+import { log } from 'console';
 @Injectable()
 export class DispatchService {
   constructor(
@@ -39,11 +40,11 @@ export class DispatchService {
 
     const tenant = shipment.tenant;
 
-    // 🚫 إذا التاجر يعتمد على نفسه بالتوصيل
-    if (tenant.delivery_mode === 'self') {
-      await this.updateShipmentStatus(shipment, 'pending', 'التوصيل ذاتي بانتظار التاجر');
-      return { status: 'pending'};
-    }
+    // // 🚫 إذا التاجر يعتمد على نفسه بالتوصيل
+    // if (tenant.delivery_mode === 'self') {
+    //   await this.updateShipmentStatus(shipment, 'pending', 'التوصيل ذاتي بانتظار التاجر');
+    //   return { status: 'pending'};
+    // }
 
     // 🧠 حاول تعيين سائق من BBox
     const assigned = await this.assignAvailableDriver(shipment);
@@ -55,7 +56,6 @@ export class DispatchService {
 
     // ✅ نجاح التعيين
     shipment.driver_id = assigned.id;
-    shipment.status_code = 'assigned';
     await this.shipmentsRepo.save(shipment);
     await this.updateShipmentStatus(shipment, 'assigned', `تم تعيين السائق ${assigned?.user?.name}`);
 
@@ -74,6 +74,7 @@ export class DispatchService {
         is_bbox_driver: true,
        // current_city: city,
       },
+      relations: ['user'],
     });
 
     return availableDrivers.length > 0 ? availableDrivers[0] : null;
@@ -85,8 +86,12 @@ export class DispatchService {
     newStatus: string,
     note?: string,
   ): Promise<void> {
-    shipment.status_code = newStatus;
-    await this.shipmentsRepo.save(shipment);
+
+
+    await this.shipmentsRepo.update(shipment.id, {
+      status_code: newStatus,
+      updated_at: new Date(),
+    });
 
     await this.statusHistoryRepo.save({
       shipment_id: shipment.id,

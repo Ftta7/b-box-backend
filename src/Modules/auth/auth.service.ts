@@ -1,4 +1,5 @@
-﻿import {
+﻿// src/modules/auth/auth.service.ts
+import {
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -12,9 +13,9 @@ import { TenantUser } from '../users/entities/tenant-user.entity';
 import * as bcrypt from 'bcrypt';
 import { randomUUID, randomBytes } from 'crypto';
 import { Tenant } from 'src/Modules/tenants/entities/tenant.entity';
-import { RegisterDto } from './DTO/register.dto';
+import { RegisterDto } from './dto/register.dto';
 import { Driver } from '../drivers/entities/driver.entity';
-import { CreateDriverDto } from './DTO/create-driver.dto';
+import { CreateDriverDto } from './dto/create-driver.dto';
 import { SuccessResponse } from 'src/common/helpers/wrap-response.helper';
 
 @Injectable()
@@ -55,7 +56,7 @@ export class AuthService {
       tenant_id: tenantLink.tenant_id,
       role: tenantLink.role,
     };
-    return SuccessResponse({access_token: this.jwtService.sign(payload)},'Login successful');
+    return SuccessResponse({ access_token: this.jwtService.sign(payload) }, 'Login successful');
   }
 
   async register(dto: RegisterDto) {
@@ -141,21 +142,20 @@ export class AuthService {
       driver_id: driver.id,
     };
 
-    return  {
-        access_token: this.jwtService.sign(payload),
-        user: {
-          id: user.id,
-          name: user.name,
-          phone: user.phone,
-          role: user.role,
-        },
-        driver: {
-          id: driver.id,
-          tenant_id: driver.tenant_id,
-          is_bbox_driver: driver.is_bbox_driver,
-          payment_type: driver.payment_type,
-        },
-      
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+      },
+      driver: {
+        id: driver.id,
+        tenant_id: driver.tenant_id,
+        is_bbox_driver: driver.is_bbox_driver,
+        payment_type: driver.payment_type,
+      },
     };
   }
 
@@ -163,9 +163,9 @@ export class AuthService {
     const exists = await this.globalUsersRepo.findOne({
       where: { phone: dto.phone },
     });
-  
+
     if (exists) throw new ConflictException('Phone already registered');
-  
+
     const user = this.globalUsersRepo.create({
       phone: dto.phone,
       name: dto.full_name,
@@ -173,12 +173,12 @@ export class AuthService {
       is_active: true,
       role: 'driver',
     });
-  
+
     const savedUser = await this.globalUsersRepo.save(user);
-  
+
     const commissionRate =
       dto.payment_type === 'commission' ? dto.commission_rate ?? 0 : 0;
-  
+
     const driver = this.driversRepo.create({
       user_id: savedUser.id,
       tenant_id: dto.tenant_id,
@@ -186,9 +186,9 @@ export class AuthService {
       payment_type: dto.payment_type ?? 'salary',
       commission_rate: commissionRate,
     });
-  
+
     const savedDriver = await this.driversRepo.save(driver);
-  
+
     return {
       success: true,
       message: 'Driver registered successfully',
@@ -203,6 +203,63 @@ export class AuthService {
       },
     };
   }
-  
-  
+
+  // ✅ Create dashboard user
+  async createDashboardUser(body: any) {
+    const { email, password, role, tenant_id } = body;
+
+    const existing = await this.globalUsersRepo.findOne({ where: { email } });
+    if (existing) {
+      throw new ConflictException('User already exists');
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = this.globalUsersRepo.create({
+      email,
+      password_hash: hashedPassword,
+      role,
+      is_active: true,
+    });
+
+    const savedUser = await this.globalUsersRepo.save(user);
+
+    if (role === 'tenant' && tenant_id) {
+      const tenantUser = this.tenantUsersRepo.create({
+        id: randomUUID(),
+        tenant_id,
+        user_id: savedUser.id,
+        role: 'admin',
+        is_active: true,
+      });
+      await this.tenantUsersRepo.save(tenantUser);
+    }
+
+    return {
+      id: savedUser.id,
+      email: savedUser.email,
+      role: savedUser.role,
+    };
+  }
+
+  // ✅ Login dashboard user
+  async loginDashboardUser(body: any): Promise<string> {
+    const { email, password } = body;
+    const user = await this.globalUsersRepo.findOne({ where: { email } });
+
+    if (!user || !user.is_active || !(await bcrypt.compare(password, user.password_hash))) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const tenantUser = await this.tenantUsersRepo.findOne({
+      where: { user_id: user.id, is_active: true },
+    });
+
+    const payload = {
+      sub: user.id,
+      role: user.role,
+      tenant_id: tenantUser?.tenant_id ?? null,
+    };
+
+    return this.jwtService.sign(payload);
+  }
 }

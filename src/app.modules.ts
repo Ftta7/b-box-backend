@@ -12,6 +12,8 @@ import { DispatchModule } from './Modules/dispatch/dispatch.module';
 import { CollectionsModule } from './Modules/collections/collections.module';
 import { TenantsModule } from './Modules/tenants/tenants.module';
 import { TenantSettlementsModule } from './Modules/settlements/tenant-settlements.module';
+import { DashboardModule } from './Modules/dashboard/dashboard.module';
+import { CarriersModule } from './Modules/carriers/carriers.module';
 
 @Module({
   imports: [
@@ -25,7 +27,9 @@ import { TenantSettlementsModule } from './Modules/settlements/tenant-settlement
     HubsModule,
     DispatchModule,
     CollectionsModule,
-    TenantsModule
+    TenantsModule,
+    DashboardModule,
+    CarriersModule
   ],
 })
 export class ModulesAggregator {}

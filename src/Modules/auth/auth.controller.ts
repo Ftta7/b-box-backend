@@ -1,8 +1,11 @@
-﻿import { Controller, Post, Body, HttpCode } from '@nestjs/common';
+﻿import { Controller, Post, Body, HttpCode, UsePipes, ValidationPipe } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './DTO/register.dto';
-import { DriverLoginDto } from './DTO/driver-login.dto';
-import { CreateDriverDto } from './DTO/create-driver.dto';
+import { RegisterDto } from './dto/register.dto';
+import { DriverLoginDto } from './dto/driver-login.dto';
+import { CreateDriverDto } from './dto/create-driver.dto';
+import { SuccessResponse, ErrorsResponse } from 'src/common/helpers/wrap-response.helper';
+import { CreateDashboardUserDto } from './dto/create-dashboard-user.dto';
+import { LoginDashboardUserDto } from './dto/login-dashboard-user.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -31,4 +34,31 @@ export class AuthController {
 registerDriver(@Body() dto: CreateDriverDto) {
   return this.authService.registerDriver(dto);
 }
+
+
+  // ✅ Create dashboard user (admin or tenant)
+  @Post('register-dashboard')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async registerDashboardUser(@Body() dto: CreateDashboardUserDto) {
+    try {
+      const result = await this.authService.createDashboardUser(dto);
+      return SuccessResponse(result, 'Dashboard user registered successfully');
+    } catch (error) {
+      return ErrorsResponse(null, error.message);
+    }
+  }
+
+  // ✅ Login dashboard user
+  @Post('login-dashboard')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async loginDashboardUser(@Body() dto: LoginDashboardUserDto) {
+    try {
+      const token = await this.authService.loginDashboardUser(dto);
+      console.log('Login token:', token);
+      
+      return SuccessResponse({ token }, 'Login successful');
+    } catch (error) {
+      return ErrorsResponse(null, error.message);
+    }
+  }
 }

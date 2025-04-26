@@ -21,7 +21,7 @@ import { LanguageMiddleware } from './common/middleware/language.middleware';
       url: process.env.DATABASE_URL,
       autoLoadEntities: true,
       synchronize: true,
-      logging: process.env.NODE_ENV !== 'production',
+     // logging: process.env.NODE_ENV !== 'production',
     }),
     ModulesAggregator,
   ],
