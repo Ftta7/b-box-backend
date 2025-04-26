@@ -13,9 +13,9 @@ import { TenantUser } from '../users/entities/tenant-user.entity';
 import * as bcrypt from 'bcrypt';
 import { randomUUID, randomBytes } from 'crypto';
 import { Tenant } from 'src/Modules/tenants/entities/tenant.entity';
-import { RegisterDto } from './DTO/register.dto';
+import { RegisterDto } from './dtos/register.dto';
 import { Driver } from '../drivers/entities/driver.entity';
-import { CreateDriverDto } from './DTO/create-driver.dto';
+import { CreateDriverDto } from './dtos/create-driver.dto';
 import { SuccessResponse } from 'src/common/helpers/wrap-response.helper';
 
 @Injectable()
