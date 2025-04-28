@@ -1,6 +1,6 @@
 ﻿import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import helmet from 'helmet';
 import * as compression from 'compression';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -9,12 +9,24 @@ import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn', 'log', 'debug', 'verbose'], // ✅
+    logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
+
+  // ✅ تحديد البريفكس العام
+  app.setGlobalPrefix('api');
+
+  // ✅ تفعيل الـ versioning
+  app.enableVersioning({
+    type: VersioningType.URI,
+    defaultVersion: '1',
+  });
+
+  // ✅ إضافات الحماية والكفاءة
   app.use(helmet());
   app.use(compression());
   app.enableCors();
 
+  // ✅ تفعيل البايب لاين للفاليديشن
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -22,17 +34,21 @@ async function bootstrap() {
     }),
   );
 
+  // ✅ إعداد Swagger
   const config = new DocumentBuilder()
-  .setTitle('BBox API')
-  .setDescription('API documentation for BBox Delivery System')
-  .setVersion('1.0')
-  .addTag('Tenant Settlements')
-  .addBearerAuth() // إذا عندك JWT أو API Key
-  .build();
+    .setTitle('BBox API')
+    .setDescription('API documentation for BBox Delivery System')
+    .setVersion('1.0')
+    .addTag('Tenant Settlements')
+    .addBearerAuth()
+    .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
-  // serve static HTML files
+
+  // ✅ وضع swagger تحت /api/swagger
+  SwaggerModule.setup('api/swagger', app, document);
+
+  // ✅ serve ملفات ثابتة
   app.use('/sandbox', express.static(join(__dirname, '..', 'src/public')));
 
   await app.listen(process.env.PORT || 3000);
