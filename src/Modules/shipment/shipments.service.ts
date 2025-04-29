@@ -17,8 +17,10 @@ import { UpdateShipmentStatusDto } from './dto/update-shipment-status.dto';
 import { DriverCollection } from '../drivers/entities/driver-collection.entity';
 import { ShipmentStatusFlow } from 'src/common/constants/shipment-status-flow';
 import { UpdateShipmentStatusByDriverDto } from './dto/update-shipment-status-by-driver.dto';
-import { ErrorsResponse } from 'src/common/helpers/wrap-response.helper';
+import { ErrorsResponse, SuccessResponse } from 'src/common/helpers/wrap-response.helper';
 import { log } from 'console';
+import { transformDriverShipments } from 'src/common/helpers/shipments.helper';
+import { getPagination, toPaginationResponse } from 'src/common/helpers/pagination.helper';
 
 @Injectable()
 export class ShipmentsService {
@@ -212,28 +214,30 @@ export class ShipmentsService {
   }
 
 
-  async getForDriver(driverId: string) {
-    const shipments = await this.shipmentsRepo.find({
-      where: { driver_id: driverId },
+  async getShipmentsListByDriver(driverId: string, query: { page?: number; limit?: number; status_code?: string }, language: 'ar' | 'en' = 'ar') {
+    const { skip, take, page, limit } = getPagination(query);
+  
+    const where: any = { driver_id: driverId };
+  
+    if (query.status_code) {
+      where.status_code = query.status_code;
+    }
+  
+    const [shipments, total] = await this.shipmentsRepo.findAndCount({
+      where,
       relations: ['status'],
       order: { created_at: 'DESC' },
+      skip,
+      take,
     });
+  
+    const data = transformDriverShipments(shipments, language);
+  
 
-    return shipments.map((shipment) => {
-      const status = shipment.status;
-      const available_actions = ShipmentStatusFlow[shipment.status_code] || [];
-
-      return {
-        ...shipment,
-        status_info: {
-          code: status.code,
-          name: status.name_translations,
-          color: status.color,
-          available_actions,
-        },
-      };
-    });
+  return SuccessResponse(  toPaginationResponse(data, total, page, limit) );
   }
+
+ 
 
 
   async getOneForDriver(driverId: string, shipmentId: string) {

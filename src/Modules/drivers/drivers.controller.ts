@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { DriversService } from './drivers.service';
 import { ApiKeyGuard } from 'src/guards/api-key.guard';
 import { JwtAuthGuard } from 'src/authintication/jwt.guard';
@@ -12,15 +12,9 @@ export class DriversController {
   constructor(private readonly service: DriversService,private readonly shipmentsService:ShipmentsService) {}
 
   @Get('shipments')
-  async getMyShipments(@Req() req) {
-    const driverId = req.user.driver_id;
-    const shipments = await this.shipmentsService.getForDriver(driverId);
-
-    return {
-      success: true,
-      message: 'Shipments retrieved successfully',
-      data: shipments,
-    };
+  async getDriverShipments(@Query() query: any, @Req() req) {
+    const driverId = req.user.driver_id; // أو حسب طريقة المصادقة عندك
+    return this.shipmentsService.getShipmentsListByDriver(driverId, query, req.lang);
   }
 
   @Get(':id/shipment')
