@@ -6,7 +6,7 @@ import { DriverGuard } from 'src/guards/driver.guard';
 import { ShipmentsService } from '../shipment/shipments.service';
 import { UpdateShipmentStatusByDriverDto } from '../shipment/dto/update-shipment-status-by-driver.dto';
 
-@Controller('api/drivers')
+@Controller('drivers')
 @UseGuards(JwtAuthGuard, DriverGuard)
 export class DriversController {
   constructor(private readonly service: DriversService,private readonly shipmentsService:ShipmentsService) {}

@@ -22,7 +22,7 @@ class RecipientInfoDto {
   notes?: string;
 }
 
-class ToAddressDto {
+class AddressDto {
   @IsString()
   street: string;
 
@@ -53,13 +53,19 @@ class ShipmentItemDto {
 }
 
 export class CreateShipmentDto {
+  @IsOptional()
   @IsUUID()
-  sender_location_id: string;
+  sender_location_id?: string;
 
   @ValidateNested()
-  @Type(() => ToAddressDto)
+  @Type(() => AddressDto)
   @IsObject()
-  to_address: ToAddressDto;
+  from_address: AddressDto; // ✨ إضافة from_address إجباري
+
+  @ValidateNested()
+  @Type(() => AddressDto)
+  @IsObject()
+  to_address: AddressDto;
 
   @ValidateNested()
   @Type(() => RecipientInfoDto)
@@ -93,7 +99,7 @@ export class CreateShipmentDto {
 
   @IsOptional()
   @IsUUID()
-  tenant_id: string;
+  tenant_id?: string;
 
   @IsOptional()
   @IsString()

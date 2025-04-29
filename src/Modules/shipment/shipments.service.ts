@@ -42,45 +42,54 @@ export class ShipmentsService {
   ) { }
 
   async create(dto: CreateShipmentDto) {
-    const location = await this.locationsRepo.findOne({
-      where: { id: dto.sender_location_id, tenant_id: dto.tenant_id },
-    });
-    if (!location) throw new NotFoundException('Invalid sender location');
-
+    // ✅ تحقق من sender_location_id فقط لو موجود
+    if (dto.sender_location_id) {
+      const location = await this.locationsRepo.findOne({
+        where: { id: dto.sender_location_id, tenant_id: dto.tenant_id },
+      });
+      if (!location) {
+        throw new NotFoundException('Invalid sender location');
+      }
+    }
+  
     const shipmentId = randomUUID();
-
+  
     const shipment = this.shipmentsRepo.create({
       id: shipmentId,
       tenant_id: dto.tenant_id,
       sender_location_id: dto.sender_location_id,
+      from_address: dto.from_address, 
       to_address: dto.to_address,
       recipient_info: dto.recipient_info,
       items: dto.items || [],
       shipment_value: dto.shipment_value,
-      delivery_fee: dto.delivery_fee,
-      total_amount: dto.total_amount,
+      delivery_fee: dto.delivery_fee ?? 0,
+      total_amount: dto.total_amount ?? 0,
       actual_payment_type: dto.payment_type,
       payment_status: dto.payment_status,
-      status_code: 'pending',
-      tracking_number: this.generateTrackingNumber(),
+      status_code: 'pending', // ✨ الحالة الافتراضية
+      tracking_number: this.generateTrackingNumber(), // ✨ توليد رقم تتبع
     });
-
+  
     const saved = await this.shipmentsRepo.save(shipment);
-
+  
+    // ✅ حفظ سجل الحالة الأولى (pending)
     await this.statusHistoryRepo.save({
       shipment_id: saved.id,
       status_code: 'pending',
       note: 'Shipment created',
     });
-
+  
+    // ✅ محاولة توزيع الشحنة للسائق مباشرة
     await this.dispatchService.dispatchShipment(saved.id);
-
+  
     return {
-      message: 'Shipment created',
+      message: 'Shipment created successfully',
       tracking_number: saved.tracking_number,
       shipment_id: saved.id,
     };
   }
+  
 
   async findAll() {
     return this.shipmentsRepo.find({

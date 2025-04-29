@@ -106,7 +106,7 @@ export class Shipment {
   @JoinColumn({ name: 'settlement_id' })
   settlement?: TenantSettlement;
 
-  @Column()
+  @Column({ name:'sender_location_id', type: 'varchar', nullable: true })
   sender_location_id?: string;
 
   @ManyToOne(() => TenantLocation)
