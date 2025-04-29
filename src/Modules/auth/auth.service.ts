@@ -17,6 +17,10 @@ import { RegisterDto } from './dtos/register.dto';
 import { Driver } from '../drivers/entities/driver.entity';
 import { CreateDriverDto } from './dtos/create-driver.dto';
 import { SuccessResponse } from 'src/common/helpers/wrap-response.helper';
+import { OtpService } from '../otp/otp.service'; // ✨ إضافة OtpService
+import { OtpContext } from '../otp/dto/send-otp.dto';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/notification-type.enum';
 
 @Injectable()
 export class AuthService {
@@ -34,8 +38,13 @@ export class AuthService {
 
     @InjectRepository(Driver)
     private driversRepo: Repository<Driver>,
+
+    private readonly otpService: OtpService, 
+
+    private readonly notificationsService: NotificationsService
   ) {}
 
+  // ✅ تسجيل دخول المستخدمين (بريد إلكتروني وكلمة مرور)
   async login({ email, password }: { email: string; password: string }) {
     const user = await this.globalUsersRepo.findOne({ where: { email } });
 
@@ -59,6 +68,7 @@ export class AuthService {
     return SuccessResponse({ access_token: this.jwtService.sign(payload) }, 'Login successful');
   }
 
+  // ✅ تسجيل مستخدم جديد
   async register(dto: RegisterDto) {
     const existing = await this.globalUsersRepo.findOne({ where: { email: dto.email } });
     if (existing) throw new ConflictException('Email already registered');
@@ -110,6 +120,7 @@ export class AuthService {
     };
   }
 
+  // ✅ تحقق من بيانات سائق قديم (بالرقم السري التقليدي)
   async validateDriver(phone: string, password: string) {
     const user = await this.globalUsersRepo.findOne({ where: { phone } });
 
@@ -133,6 +144,7 @@ export class AuthService {
     return { user, driver };
   }
 
+  // ✅ تسجيل دخول السائقين بكلمة المرور التقليدية
   async loginDriver({ phone, password }: { phone: string; password: string }) {
     const { user, driver } = await this.validateDriver(phone, password);
 
@@ -159,6 +171,7 @@ export class AuthService {
     };
   }
 
+  // ✅ تسجيل سائق جديد
   async registerDriver(dto: CreateDriverDto) {
     const exists = await this.globalUsersRepo.findOne({
       where: { phone: dto.phone },
@@ -204,7 +217,7 @@ export class AuthService {
     };
   }
 
-  // ✅ Create dashboard user
+  // ✅ إنشاء مستخدم لوحة تحكم
   async createDashboardUser(body: any) {
     const { email, password, role, tenant_id } = body;
 
@@ -241,7 +254,7 @@ export class AuthService {
     };
   }
 
-  // ✅ Login dashboard user
+  // ✅ تسجيل دخول مستخدم لوحة تحكم
   async loginDashboardUser(body: any): Promise<string> {
     const { email, password } = body;
     const user = await this.globalUsersRepo.findOne({ where: { email } });
@@ -262,4 +275,92 @@ export class AuthService {
 
     return this.jwtService.sign(payload);
   }
+
+  // ✅ إرسال كود OTP للسائق
+  async sendDriverOtp(phone_number: string) {
+    const user = await this.globalUsersRepo.findOne({
+      where: { phone: phone_number },
+    });
+  
+    if (!user || user.role !== 'driver') {
+      throw new NotFoundException('Driver user not found');
+    }
+  
+    const driver = await this.driversRepo.findOne({
+      where: { user_id: user.id, is_active: true },
+    });
+  
+    if (!driver) {
+      throw new NotFoundException('Driver record not found');
+    }
+  
+    // ✨ توليد كود OTP
+    const otpCode = await this.otpService.sendOtp({
+      phone_number,
+      context: OtpContext.DRIVER,
+    });
+  
+    // ✨ إرسال الكود عبر WhatsApp
+    await this.notificationsService.sendNotification({
+      type: NotificationType.WHATSAPP,
+      recipient: "966547305033",
+      message: `رمز التحقق الخاص بك هو: ${otpCode}`,
+    });
+  
+    return null;
+  }
+  
+
+  // ✅ تسجيل دخول سائق عبر OTP
+  async driverLoginWithOtp(phone_number: string, otp_code: string) {
+    const user = await this.globalUsersRepo.findOne({
+      where: { phone: phone_number },
+    });
+  
+    if (!user || user.role !== 'driver') {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+  
+    const driver = await this.driversRepo.findOne({
+      where: { user_id: user.id, is_active: true },
+    });
+  
+    if (!driver) {
+      throw new UnauthorizedException('Driver record not found');
+    }
+  
+    const isOtpValid = await this.otpService.verifyOtp({
+      phone_number,
+      otp_code,
+      context: OtpContext.DRIVER,
+    });
+    
+  
+    if (!isOtpValid) {
+      throw new UnauthorizedException('Invalid or expired OTP');
+    }
+  
+    const payload = {
+      sub: user.id,
+      role: user.role,
+      driver_id: driver.id,
+    };
+  
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+        role: user.role,
+      },
+      driver: {
+        id: driver.id,
+        tenant_id: driver.tenant_id,
+        is_bbox_driver: driver.is_bbox_driver,
+        payment_type: driver.payment_type,
+      },
+    };
+  }
+  
 }

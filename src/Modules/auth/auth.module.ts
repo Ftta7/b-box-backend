@@ -9,13 +9,17 @@ import { TenantUser } from '../users/entities/tenant-user.entity';
 import { Tenant } from 'src/Modules/tenants/entities/tenant.entity';
 import { JwtStrategy } from 'src/authintication/jwt.strategy';
 import { Driver } from '../drivers/entities/driver.entity';
-
+import { OtpModule } from '../otp/otp.module'; // ✨
+import { NotificationModule } from '../notifications/notification.module';
+ 
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([GlobalUser, TenantUser, Tenant,Driver]),
+    OtpModule, 
+    NotificationModule,// ✨ استوردناه هنا بشكل صحيح
+    TypeOrmModule.forFeature([GlobalUser, TenantUser, Tenant, Driver]),
     JwtModule.registerAsync({
-      imports: [ConfigModule],
+      imports: [ConfigModule], // ✨ فقط ConfigModule هنا
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get('JWT_SECRET'),
