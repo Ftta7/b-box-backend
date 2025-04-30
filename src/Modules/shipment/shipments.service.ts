@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { Shipment } from './entities/shipment.entity';
 import { CreateShipmentDto } from './dto/create-shipment.dto';
 import { randomUUID } from 'crypto';
@@ -37,6 +37,8 @@ export class ShipmentsService {
     @InjectRepository(ShipmentStatusHistory)
     private statusHistoryRepo: Repository<ShipmentStatusHistory>,
 
+    @InjectRepository(ShipmentStatus)
+    private shipmentStatusRepo: Repository<ShipmentStatus>,
 
     private dispatchService: DispatchService,
   ) { }
@@ -249,25 +251,39 @@ export class ShipmentsService {
  
 
 
-  async getOneForDriver(driverId: string, shipmentId: string) {
+  async getOneForDriver(
+    driverId: string,
+    shipmentId: string,
+    lang: 'ar' | 'en' = 'en', // ← اللغة المطلوبة
+  ) {
     const shipment = await this.shipmentsRepo.findOne({
       where: { id: shipmentId, driver_id: driverId },
       relations: ['status'],
     });
-
+  
     if (!shipment) {
       throw new NotFoundException('Shipment not found for this driver');
     }
-
-    const status = shipment.status;
-    const available_actions = ShipmentStatusFlow[shipment.status_code] || [];
-
+  
+    const nextStatusCodes = ShipmentStatusFlow[shipment.status_code] || [];
+  
+    // ✅ جلب الحالات التالية بالتفاصيل
+    const nextStatuses = await this.shipmentStatusRepo.findBy({
+      code: In(nextStatusCodes),
+    });
+  
+    const available_actions = nextStatuses.map((status) => ({
+      code: status.code,
+      name: status.name_translations[lang] || status.name_translations.en,
+      color: status.color,
+    }));
+  
     return {
       ...shipment,
       available_actions,
     };
   }
-
+  
   async driverUpdateShipmentStatus(
     driverId: string,
     dto: UpdateShipmentStatusByDriverDto,
@@ -324,6 +340,30 @@ export class ShipmentsService {
     return { message: 'Shipment status updated successfully' };
   }
   
-
+  async getDriverShipmentStatusSummary(driverId: string, lang: 'ar' | 'en') {
+    const statuses = await this.shipmentStatusRepo.find({
+      where: { code: Not('pending') }, 
+      order: { sort: 'ASC' },         
+    });
+  
+    const counts = await this.shipmentsRepo
+      .createQueryBuilder('s')
+      .select('s.status_code', 'code')
+      .addSelect('COUNT(*)', 'count')
+      .where('s.driver_id = :driverId', { driverId })
+      .groupBy('s.status_code')
+      .getRawMany();
+  
+    const countMap = new Map(counts.map(c => [c.code, parseInt(c.count)]));
+  
+    return statuses.map(status => ({
+      code: status.code,
+      name: status.name_translations[lang] || status.name_translations.en,
+      color: status.color,
+      count: countMap.get(status.code) || 0,
+    }));
+  }
+  
+  
 
 }

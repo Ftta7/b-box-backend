@@ -14,7 +14,6 @@ import {
     canActivate(context: ExecutionContext): boolean {
       const request = context.switchToHttp().getRequest();
       const user = request.user;
-  
       if (!user || user.role !== 'driver') {
         throw new UnauthorizedException('Access restricted to drivers only');
       }

@@ -3,7 +3,7 @@ import { Entity, PrimaryColumn, Column } from 'typeorm';
 @Entity()
 export class ShipmentStatus {
   @PrimaryColumn()
-  code: string; // مثل: 'pending', 'assigned', 'delivered', ...
+  code: string; 
 
   @Column({ type: 'jsonb', default: {} })
   name_translations: {
@@ -16,4 +16,8 @@ export class ShipmentStatus {
 
   @Column({ default: true })
   is_active: boolean;
+
+  
+  @Column({ type: 'int', default: 0 }) 
+  sort: number;
 }

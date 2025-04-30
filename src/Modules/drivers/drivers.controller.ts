@@ -13,7 +13,7 @@ export class DriversController {
 
   @Get('shipments')
   async getDriverShipments(@Query() query: any, @Req() req) {
-    const driverId = req.user.driver_id; // أو حسب طريقة المصادقة عندك
+    const driverId = req.user.driver_id;
     return this.shipmentsService.getShipmentsListByDriver(driverId, query, req.lang);
   }
 
@@ -31,4 +31,18 @@ async updateShipmentStatusByDriver(
   const driverId = req.user.driver_id;
   return this.shipmentsService.driverUpdateShipmentStatus(driverId, dto);
 }
+
+@Get('status-summary')
+async getSummaryByDriver(
+  @Req() req,
+) {
+  const driverId = req.user.driver_id;
+  const result = await this.shipmentsService.getDriverShipmentStatusSummary(driverId, req.lang);
+  return {
+    success: true,
+    message: 'Shipment status summary fetched successfully',
+    data: result
+  };
+}
+
 }
