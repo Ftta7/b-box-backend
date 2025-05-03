@@ -38,17 +38,7 @@ export class AuthController {
     return this.authService.registerDriver(dto);
   }
 
-  // ✅ Create dashboard user (admin or tenant)
-  @Post('register-dashboard')
-  @UsePipes(new ValidationPipe({ whitelist: true }))
-  async registerDashboardUser(@Body() dto: CreateDashboardUserDto) {
-    try {
-      const result = await this.authService.createDashboardUser(dto);
-      return SuccessResponse(result, 'Dashboard user registered successfully');
-    } catch (error) {
-      return ErrorsResponse(null, error.message);
-    }
-  }
+
 
   // ✅ Login dashboard user
   @Post('login-dashboard')

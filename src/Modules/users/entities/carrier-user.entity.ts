@@ -1,5 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { Carrier } from './carrier.entity';
+import { Carrier } from '../../carriers/entities/carrier.entity';
 
 export enum CarrierUserRole {
   MANAGER = 'manager',
@@ -17,6 +17,9 @@ export class CarrierUser {
 
   @Column({ type: 'uuid' })
   global_user_id: string;
+
+  @Column({ type: 'uuid' })
+  carrier_id: string;
 
   @Column({ type: 'enum', enum: CarrierUserRole })
   role: CarrierUserRole;

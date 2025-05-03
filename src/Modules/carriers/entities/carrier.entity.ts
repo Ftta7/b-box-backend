@@ -1,6 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { CarrierCity } from './carrier-city.entity';
-import { CarrierUser } from './carrier-user.entity';
+import { CarrierUser } from '../../users/entities/carrier-user.entity';
 import { WalletTransaction } from './carrier-wallet-transaction.entity';
 
 

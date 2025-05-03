@@ -1,16 +1,17 @@
 // src/modules/dashboard/dashboard.controller.ts
-import { Controller, Get, Req, UseGuards, ForbiddenException, Query } from '@nestjs/common';
+import { Controller, Get, Req, UseGuards, ForbiddenException, Query, Post, Body, ValidationPipe, UsePipes, Param } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 import { AuthGuard } from '@nestjs/passport';
 import { DashboardGuard } from 'src/guards/dashboard.guard';
 import { Request } from 'express';
-import { SuccessResponse } from 'src/common/helpers/wrap-response.helper';
+import { ErrorsResponse, SuccessResponse } from 'src/common/helpers/wrap-response.helper';
 import { DriversService } from '../drivers/drivers.service';
+import { CreateDashboardUserDto } from './create-dashboard-user.dto';
 
 @Controller('dashboard')
 @UseGuards(AuthGuard('jwt'), DashboardGuard)
 export class DashboardController {
-  constructor(private readonly dashboardService: DashboardService,private readonly driversService: DriversService) {}
+  constructor(private readonly dashboardService: DashboardService, private readonly driversService: DriversService) { }
 
   // ✅ Endpoint: Dashboard Summary
   @Get('summary')
@@ -39,6 +40,19 @@ export class DashboardController {
       throw new ForbiddenException('Unauthorized user');
     }
   }
+
+
+  @Get('shipments')
+  async getMyShipments(@Query() query: any, @Req() req) {
+    const { role, carrier_id, tenant_id } = req.user;
+
+    return this.dashboardService.getShipment(
+      { role, carrier_id, tenant_id },
+      query,
+      req.lang
+    );
+  }
+
   @Get('drivers')
   async listDrivers(
     @Req() req: Request,
@@ -56,4 +70,18 @@ export class DashboardController {
     });
     return SuccessResponse(result, 'Drivers list retrieved');
   }
+
+  // ✅ Create dashboard user (admin or tenant)
+  @Post('create-user')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
+  async createDashboardUser(@Req() req: Request, @Body() body: CreateDashboardUserDto) {
+    return this.dashboardService.createDashboardUser(body, req.user);
+  }
+
+  @Get(':id/shipment')
+  async getShipmentById(@Param('id') id: string, @Req() req) {
+    const driverId = req.user.driver_id;
+    return this.dashboardService.getShipmentDetails(id);
+  }
+
 }

@@ -20,7 +20,7 @@ export class DriversController {
   @Get(':id/shipment')
 async getShipmentById(@Param('id') id: string, @Req() req) {
   const driverId = req.user.driver_id;
-  return this.shipmentsService.getOneForDriver(driverId, id);
+  return this.shipmentsService.getShipmentDetailsByDriver(driverId, id);
 }
 
 @Put('shipment/update-status')

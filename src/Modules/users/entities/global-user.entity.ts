@@ -24,7 +24,7 @@ export class GlobalUser {
   password_hash: string;
 
   @Column({ type: 'varchar', default: 'customer' })
-  role: 'admin' | 'driver' | 'tenant' | 'customer';
+  role: 'admin' | 'driver' | 'tenant' | 'customer' | 'carrier';
 
   @Column({ type: 'boolean', default: true })
   is_active: boolean;

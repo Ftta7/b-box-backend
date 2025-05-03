@@ -4,6 +4,8 @@ import {
   Injectable,
   UnauthorizedException,
   NotFoundException,
+  ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -21,6 +23,7 @@ import { OtpService } from '../otp/otp.service'; // ✨ إضافة OtpService
 import { OtpContext } from '../otp/dto/send-otp.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/notification-type.enum';
+import { CarrierUser } from '../users/entities/carrier-user.entity';
 
 @Injectable()
 export class AuthService {
@@ -39,6 +42,11 @@ export class AuthService {
     @InjectRepository(Driver)
     private driversRepo: Repository<Driver>,
 
+    @InjectRepository(CarrierUser)
+    private carrierUsersRepo: Repository<CarrierUser>,
+
+    
+
     private readonly otpService: OtpService, 
 
     private readonly notificationsService: NotificationsService
@@ -47,26 +55,47 @@ export class AuthService {
   // ✅ تسجيل دخول المستخدمين (بريد إلكتروني وكلمة مرور)
   async login({ email, password }: { email: string; password: string }) {
     const user = await this.globalUsersRepo.findOne({ where: { email } });
-
+  
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
       throw new UnauthorizedException('Invalid credentials');
     }
-
-    const tenantLink = await this.tenantUsersRepo.findOne({
-      where: { user_id: user.id, is_active: true },
-    });
-
-    if (!tenantLink) {
-      throw new UnauthorizedException('No active tenant access');
+  
+    const payload: any = { sub: user.id };
+    const role = user.role;
+  
+    if (role === 'tenant') {
+      const tenantLink = await this.tenantUsersRepo.findOne({
+        where: { user_id: user.id, is_active: true },
+      });
+      if (!tenantLink) throw new UnauthorizedException('No active tenant access');
+  
+      Object.assign(payload, {
+        role: 'tenant',
+        tenant_id: tenantLink.tenant_id,
+      });
+  
+    } else if (role === 'carrier') {
+      const carrierLink = await this.carrierUsersRepo.findOne({
+        where: { global_user_id: user.id, is_active: true },
+      });
+      if (!carrierLink) throw new UnauthorizedException('No active carrier access');
+  
+      Object.assign(payload, {
+        role: 'carrier',
+        carrier_id: carrierLink.id,
+      });
+  
+    } else if (role === 'admin') {
+      payload.role = 'admin';
+  
+    } else {
+      throw new UnauthorizedException('Invalid user role');
     }
-
-    const payload = {
-      sub: user.id,
-      tenant_id: tenantLink.tenant_id,
-      role: tenantLink.role,
-    };
-    return SuccessResponse({ access_token: this.jwtService.sign(payload) }, 'Login successful');
+  
+    const access_token = this.jwtService.sign(payload);
+    return SuccessResponse({ access_token }, 'Login successful');
   }
+  
 
   // ✅ تسجيل مستخدم جديد
   async register(dto: RegisterDto) {
@@ -217,42 +246,8 @@ export class AuthService {
     };
   }
 
-  // ✅ إنشاء مستخدم لوحة تحكم
-  async createDashboardUser(body: any) {
-    const { email, password, role, tenant_id } = body;
 
-    const existing = await this.globalUsersRepo.findOne({ where: { email } });
-    if (existing) {
-      throw new ConflictException('User already exists');
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = this.globalUsersRepo.create({
-      email,
-      password_hash: hashedPassword,
-      role,
-      is_active: true,
-    });
-
-    const savedUser = await this.globalUsersRepo.save(user);
-
-    if (role === 'tenant' && tenant_id) {
-      const tenantUser = this.tenantUsersRepo.create({
-        id: randomUUID(),
-        tenant_id,
-        user_id: savedUser.id,
-        role: 'admin',
-        is_active: true,
-      });
-      await this.tenantUsersRepo.save(tenantUser);
-    }
-
-    return {
-      id: savedUser.id,
-      email: savedUser.email,
-      role: savedUser.role,
-    };
-  }
+  
 
   // ✅ تسجيل دخول مستخدم لوحة تحكم
   async loginDashboardUser(body: any): Promise<string> {

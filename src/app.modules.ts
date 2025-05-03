@@ -14,9 +14,22 @@ import { TenantsModule } from './Modules/tenants/tenants.module';
 import { TenantSettlementsModule } from './Modules/settlements/tenant-settlements.module';
 import { DashboardModule } from './Modules/dashboard/dashboard.module';
 import { CarriersModule } from './Modules/carriers/carriers.module';
+import { DriverLocationModule } from './Modules/driver-tracking/driver-location.module';
+import { RedisModule, RedisModuleOptions } from '@nestjs-modules/ioredis';
 
 @Module({
   imports: [
+    // RedisModule.forRootAsync({
+    //   useFactory: (): RedisModuleOptions => ({
+    //     type: 'single',
+    //     options: {
+    //       host: 'rediss://red-d0991gs9c44c73db2v1g:4r8nOeT3LTB2Em9s08ZXFrhiNFwQNVpD@oregon-keyvalue.render.com',
+    //       port: 6379,
+    //     },
+    //   }),
+    // }),
+    
+    
     AuthModule,
     DriversModule,
     ShipmentsModule,
@@ -29,7 +42,8 @@ import { CarriersModule } from './Modules/carriers/carriers.module';
     CollectionsModule,
     TenantsModule,
     DashboardModule,
-    CarriersModule
+    CarriersModule,
+    // DriverLocationModule
   ],
 })
 export class ModulesAggregator {}

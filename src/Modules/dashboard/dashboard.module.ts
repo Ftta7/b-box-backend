@@ -12,12 +12,15 @@ import { TenantLocation } from '../tenants/entities/tenant-location.entity';
 import { Driver } from '../drivers/entities/driver.entity';
 import { GlobalUser } from '../users/entities/global-user.entity';
 import { DriversModule } from '../drivers/drivers.module';
+import { TenantUser } from '../users/entities/tenant-user.entity';
+import { TenantsModule } from '../tenants/tenants.module';
+import { CarrierUser } from '../users/entities/carrier-user.entity';
 
 @Module({
   controllers: [DashboardController],
   providers: [DashboardService],
-  imports: [ShipmentsModule,DriversModule,
-        TypeOrmModule.forFeature([Shipment, ShipmentType, TenantLocation,ShipmentStatus ,ShipmentStatusHistory,DriverCollection ,Driver,GlobalUser  ])
+  imports: [ShipmentsModule,DriversModule,TenantsModule,
+        TypeOrmModule.forFeature([Shipment, ShipmentType, TenantLocation,ShipmentStatus ,ShipmentStatusHistory,DriverCollection ,Driver,GlobalUser,TenantUser ,CarrierUser ])
   ],
 })
 export class DashboardModule {}

@@ -249,6 +249,7 @@ export class ShipmentsService {
   }
 
  
+  
 
 
   async getOneForDriver(
@@ -364,6 +365,87 @@ export class ShipmentsService {
     }));
   }
   
+  async getShipmentDetailsByDriver(
+    driverId: string,
+    shipmentId: string,
+    lang: 'ar' | 'en' = 'en', // ← اللغة المطلوبة
+  ) {
+    const shipment = await this.shipmentsRepo.findOne({
+      where: { id: shipmentId, driver_id: driverId },
+      relations: ['status','tenant', 'carrier', 'driver','driver.user'],
+    });
   
+    if (!shipment) {
+      throw new NotFoundException('Shipment not found for this driver');
+    }
+  
+    const nextStatusCodes = ShipmentStatusFlow[shipment.status_code] || [];
+  
+    // ✅ جلب الحالات التالية بالتفاصيل
+    const nextStatuses = await this.shipmentStatusRepo.findBy({
+      code: In(nextStatusCodes),
+    });
+  
+    const available_actions = nextStatuses.map((status) => ({
+      code: status.code,
+      name: status.name_translations[lang] || status.name_translations.en,
+      color: status.color,
+    }));
+  
+    
+    return SuccessResponse( this.transformShipmentResponse(shipment,available_actions, lang));
+
+  }
+
+
+ transformShipmentResponse(shipment: any,available_actions:any, lang: 'ar' | 'en' = 'ar') {
+    return {
+      id: shipment.id,
+      tracking_number: shipment.tracking_number,
+      status: {
+        code: shipment.status?.code,
+        color: shipment.status?.color,
+        name_: shipment.status?.name_translations?.[lang] || shipment.status?.name_translations?.en,
+      },
+      tenant: {
+        id: shipment.tenant?.id,
+        name: shipment.tenant?.name_translations?.[lang] || shipment.tenant?.name_translations?.en,
+        phone: shipment.tenant?.phone || 'bbox',
+        address: shipment.tenant?.address || null,
+      },
+      carrier:{
+        id: shipment.carrier?.id || '--',
+        name: shipment.carrier?.name || '--',
+        logo_url: shipment.carrier?.logo_url || '--',
+        contact_info: shipment.carrier?.contact_info || '--',
+      },
+      driver:  
+      {
+            id: shipment.driver?.id,
+            name: shipment.driver?.user?.name || '--',  
+            phone: shipment.driver?.user?.phone || '--',
+      } ,
+      from_address: shipment.from_address || {},
+      to_address: shipment.to_address || {},
+      recipient_info: shipment.recipient_info || {},
+      delivery_fee: shipment.delivery_fee,
+      platform_fee: shipment.platform_fee,
+      tenant_payout: shipment.tenant_payout,
+      cod_amount: shipment.cod_amount,
+      shipment_value: shipment.shipment_value,
+      total_amount: shipment.total_amount,
+      payment_status: shipment.payment_status,
+      actual_payment_type: shipment.actual_payment_type,
+      created_at: shipment.created_at,
+      updated_at: shipment.updated_at,
+      delivered_at: shipment.delivered_at,
+      items: shipment.items || [],
+      available_actions: (available_actions || []).map(action => ({
+        code: action.code,
+        name: action.name,
+        color: action.color,
+      })),
+    };
+  }
 
 }

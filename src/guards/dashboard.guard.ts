@@ -8,7 +8,7 @@ export class DashboardGuard implements CanActivate {
     const request: Request = context.switchToHttp().getRequest();
     const user = request.user as any;
 
-    if (!user || !['admin', 'tenant'].includes(user.role)) {
+    if (!user || !['admin', 'tenant', 'carrier'].includes(user.role)) {
       throw new ForbiddenException('Access to dashboard is restricted');
     }
 

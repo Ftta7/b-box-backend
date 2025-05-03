@@ -34,6 +34,11 @@ async function bootstrap() {
     }),
   );
 
+
+  app.enableCors({
+    origin: '*', 
+  });
+
   // ✅ إعداد Swagger
   const config = new DocumentBuilder()
     .setTitle('BBox API')

@@ -11,13 +11,14 @@ import { JwtStrategy } from 'src/authintication/jwt.strategy';
 import { Driver } from '../drivers/entities/driver.entity';
 import { OtpModule } from '../otp/otp.module'; // ✨
 import { NotificationModule } from '../notifications/notification.module';
+import { CarrierUser } from '../users/entities/carrier-user.entity';
  
 @Module({
   imports: [
     ConfigModule,
     OtpModule, 
     NotificationModule,// ✨ استوردناه هنا بشكل صحيح
-    TypeOrmModule.forFeature([GlobalUser, TenantUser, Tenant, Driver]),
+    TypeOrmModule.forFeature([GlobalUser, TenantUser, Tenant, Driver,CarrierUser]),
     JwtModule.registerAsync({
       imports: [ConfigModule], // ✨ فقط ConfigModule هنا
       inject: [ConfigService],
